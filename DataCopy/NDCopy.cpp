@@ -60,12 +60,16 @@ int NdCopy(const Buffer &input, const Dims &input_start, Dims &input_count,
     if (!hasOverlap(overlap_start, overlap_end)) return 1;//no overlap found
     getElmCount(input_elm_count,input_count);
     getElmCount(output_elm_count, output_count);
-    input_overlap_start_offset= getIOStartOffset(input_start,input_elm_count,overlap_start);
-    output_overlap_start_offset=getIOStartOffset(output_start,output_elm_count,overlap_start);
-    min_cont_dim = getMinContDimn(input_start, input_count,overlap_start, overlap_count);
+    input_overlap_start_offset= getIOStartOffset(input_start,input_elm_count,
+                                                 overlap_start);
+    output_overlap_start_offset=getIOStartOffset(output_start,output_elm_count,
+                                                 overlap_start);
+    min_cont_dim = getMinContDimn(input_start, input_count,overlap_start,
+                                  overlap_count);
     block_size= getBlockSize(overlap_count, min_cont_dim);
     copy_cat(0,input,output,input_overlap_start_offset, output_overlap_start_offset,
-             input_elm_count, output_elm_count,overlap_count,min_cont_dim,block_size, element_size);
+             input_elm_count, output_elm_count,overlap_count,min_cont_dim,block_size,
+             element_size);
     //end of main algm
     return 0;
 }
@@ -85,7 +89,8 @@ void getOverlapStart(vector<size_t>&overlap_start,const vector<size_t>&input_sta
     for (size_t i=0;i<overlap_start.size();i++)
         overlap_start[i]=input_start[i]>output_start[i]?input_start[i]:output_start[i];
 }
-void getOverlapEnd(vector<size_t>&overlap_end, vector<size_t>&input_end, vector<size_t>&output_end){
+void getOverlapEnd(vector<size_t>&overlap_end, vector<size_t>&input_end,
+                   vector<size_t>&output_end){
     for (size_t i=0; i<overlap_end.size();i++)
         overlap_end[i]=input_end[i]<output_end[i]?input_end[i]:output_end[i];
 }
@@ -100,9 +105,11 @@ bool hasOverlap(vector<size_t>&overlap_start, vector<size_t>overlap_end){
     return true;
 }
 void getElmCount(vector<size_t>&io_elm_count,vector<size_t>&io_count){
-    //io_elm_count[i] holds total number of elements under each element of the i th dimension
+    //io_elm_count[i] holds total number of elements under each element
+    //of the i'th dimension
     io_elm_count[io_elm_count.size()-1]=1;
-    if (io_elm_count.size()>1) io_elm_count[io_elm_count.size()-2]=io_count[io_elm_count.size()-1];
+    if (io_elm_count.size()>1)
+        io_elm_count[io_elm_count.size()-2]=io_count[io_elm_count.size()-1];
     if (io_elm_count.size()>2) {
         size_t i=io_elm_count.size()-3;
         while (true){
@@ -115,14 +122,15 @@ void getElmCount(vector<size_t>&io_elm_count,vector<size_t>&io_count){
 size_t getIOStartOffset(const vector<size_t>& io_start,vector<size_t>io_elm_counts, vector<size_t>& overlap_start){
     size_t res=1;
     for (size_t i=0; i<io_start.size();i++)
-        res=res+(overlap_start[i]-io_start[i])*io_elm_counts[i];
+        res+=(overlap_start[i]-io_start[i])*io_elm_counts[i];
     return res;
 }
 size_t getMinContDimn(const vector<size_t>&input_start, const vector<size_t>&input_count,
                       vector<size_t>&overlap_start,vector<size_t>overlap_count){
     //    note: min_cont_dim is the first index where its input box and overlap box
     //    are not fully match. therefore all data below this branch is continous
-    //    and this determins the Biggest continuous block size - Each element of the current dimension.
+    //    and this determins the Biggest continuous block size - Each element of the
+    //    current dimension.
     size_t i=input_start.size()-1;
     while (true){
         if (i==0) break;
@@ -149,7 +157,8 @@ void copy_cat(size_t cur_dim, const vector<char>&input,vector<char>&output,size_
     //note: all elements in and below this node is continuous on input
     //copy the continous data block
     if (cur_dim==min_cont_dim){
-        memcpy(&output+out_start_offset*elm_size, &input+in_start_offset*elm_size, block_size*elm_size);
+        memcpy(&output+out_start_offset*elm_size, &input+in_start_offset*elm_size,
+               block_size*elm_size);
         in_start_offset+=block_size;
         out_start_offset+=block_size;
     }
@@ -157,8 +166,9 @@ void copy_cat(size_t cur_dim, const vector<char>&input,vector<char>&output,size_
     //on a deeper level, stops upon reaching min_cont_dim
     if (cur_dim<min_cont_dim)
         for (size_t i=0; i<overlap_count[i];i++)
-            copy_cat(cur_dim+1, input, output, in_start_offset, out_start_offset,in_elem_count,
-                     out_elem_count,overlap_count, min_cont_dim, block_size, elm_size);
+            copy_cat(cur_dim+1, input, output, in_start_offset, out_start_offset,
+                     in_elem_count,out_elem_count,overlap_count, min_cont_dim,
+                     block_size, elm_size);
     //the gap between current node and the next needs to be padded so that
     //next continous blocks starts at the correct position for both input and output
     //the size of the gap depends on the depth in dimensions,level backtracked and

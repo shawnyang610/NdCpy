@@ -10,41 +10,37 @@
 #include <vector>
 #include <stdio.h>
 #include <string.h>
-#include<cstring>
+#include <cstring>
+
+#include "NDCopy.h"
+
 using namespace std;
 
 /*helper functions*/
-void getInputEnd(vector<size_t>&input_end, vector<size_t>&input_start,
-                 vector<size_t>&input_count);
-void getOutputEnd(vector<size_t>& output_end, vector<size_t>&output_start,
-                  vector<size_t>&output_count);
-void getOverlapStart(vector<size_t>&overlap_start,vector<size_t>&input_start,
-                     vector<size_t>&output_start);
-void getOverlapEnd(vector<size_t>&overlap_end, vector<size_t>&input_end,
-                   vector<size_t>&output_end);
-void getOverlapCount(vector<size_t>&overlap_count,vector<size_t>&overlap_start,
-                     vector<size_t>&overlap_end);
+void getInputEnd(vector<size_t>&input_end, const vector<size_t>&input_start,const vector<size_t>&input_count);
+void getOutputEnd(vector<size_t>& output_end, const vector<size_t>&output_start, const vector<size_t>&output_count);
+void getOverlapStart(vector<size_t>&overlap_start, const vector<size_t>&input_start, const vector<size_t>&output_start);
+void getOverlapEnd(vector<size_t>&overlap_end, vector<size_t>&input_end,vector<size_t>&output_end);
+void getOverlapCount(vector<size_t>&overlap_count,vector<size_t>&overlap_start,vector<size_t>&overlap_end);
 bool hasOverlap(vector<size_t>&overlap_start, vector<size_t>overlap_end);
 size_t getPosition (vector<size_t>& start_pos, vector<size_t>& overlap_start);
-size_t getMinContDimn(vector<size_t>&input_start, vector<size_t>&input_count,
+size_t getMinContDimn(const vector<size_t>&input_start, const vector<size_t>&input_count,
                       vector<size_t>&overlap_start, vector<size_t>overlap_count);
 size_t getBlockSize(vector<size_t> overlap_count, size_t min_cont_dim);
-void copy_cat(size_t lv, vector<char>&input,vector<char>&output,
-              size_t& in_start_offset,size_t& out_start_offset,
-              vector<size_t>in_elem_count,vector<size_t>out_elem_count,
-              vector<size_t>&overlap_count,size_t min_cont_dim, size_t block_size,
-              size_t elm_size);
+void copy_cat(size_t lv, const vector<char>&input,vector<char>&output,size_t& in_start_offset,
+              size_t& out_start_offset,vector<size_t>in_elem_count,vector<size_t>out_elem_count,
+              vector<size_t>&overlap_count,size_t min_cont_dim, size_t block_size, size_t elm_size);
 void getElmCount(vector<size_t>&io_elm_count,vector<size_t>&io_count);
-size_t getIOStartOffset(vector<size_t>& io_start,vector<size_t>io_elm_counts,
+size_t getIOStartOffset(const vector<size_t>& io_start,vector<size_t>io_elm_counts,
                         vector<size_t>& overlap_start);
 
 /*end of helper functions*/
 
 
 /*calling function*/
-int NdCopy(vector<char> input, vector<size_t> input_start, vector<size_t> input_count,
-           vector<char> output, vector<size_t> output_start, vector<size_t> output_count,
-           size_t element_size, bool dimension_reversed=false)
+int NdCopy(const Buffer &input, const Dims &input_start, Dims &input_count,
+           Buffer &output, const Dims &output_start, Dims &output_count,
+           size_t element_size, bool dimension_reversed)
 {
     vector<size_t>input_end(input_start.size());
     vector<size_t>output_end(input_start.size());
@@ -81,18 +77,15 @@ int NdCopy(vector<char> input, vector<size_t> input_start, vector<size_t> input_
 
 
 /* helper function definitions*/
-void getInputEnd(vector<size_t>& input_end, vector<size_t>&input_start,
-                 vector<size_t>&input_count){
+void getInputEnd(vector<size_t>& input_end, const vector<size_t>&input_start, const vector<size_t>&input_count){
     for (size_t i=0;i<input_start.size();i++)
         input_end[i]=input_start[i]+input_count[i]-1;
 };
-void getOutputEnd(vector<size_t>& output_end, vector<size_t>&output_start,
-                  vector<size_t>&output_count){
+void getOutputEnd(vector<size_t>& output_end, const vector<size_t>&output_start, const vector<size_t>&output_count){
     for (size_t i=0; i<output_start.size();i++)
         output_end[i]=output_start[i]+output_count[i]-1;
 };
-void getOverlapStart(vector<size_t>&overlap_start,vector<size_t>&input_start,
-                     vector<size_t>&output_start){
+void getOverlapStart(vector<size_t>&overlap_start,const vector<size_t>&input_start, const vector<size_t>&output_start){
     for (size_t i=0;i<overlap_start.size();i++)
         overlap_start[i]=input_start[i]>output_start[i]?input_start[i]:output_start[i];
 }
@@ -126,14 +119,13 @@ void getElmCount(vector<size_t>&io_elm_count,vector<size_t>&io_count){
         }
     }
 }
-size_t getIOStartOffset(vector<size_t>& io_start,vector<size_t>io_elm_counts,
-                        vector<size_t>& overlap_start){
-    size_t res=0;
+size_t getIOStartOffset(const vector<size_t>& io_start,vector<size_t>io_elm_counts, vector<size_t>& overlap_start){
+    size_t res=1;
     for (size_t i=0; i<io_start.size();i++)
         res+=(overlap_start[i]-io_start[i])*io_elm_counts[i];
     return res;
 }
-size_t getMinContDimn(vector<size_t>&input_start, vector<size_t>&input_count,
+size_t getMinContDimn(const vector<size_t>&input_start, const vector<size_t>&input_count,
                       vector<size_t>&overlap_start,vector<size_t>overlap_count){
     //    note: min_cont_dim is the first index where its input box and overlap box
     //    are not fully match. therefore all data below this branch is continous
@@ -159,10 +151,9 @@ size_t getBlockSize(vector<size_t> overlap_count, size_t min_cont_dim){
  W = overlap_area_count[0]*overlap_area_count[1]*...*overlap_area_count[total_dims-1]
  best case: B =1, happens when min_cont_dim is the top dimension
  */
-void copy_cat(size_t cur_dim, vector<char>&input,vector<char>&output,
-              size_t& in_start_offset,size_t& out_start_offset,vector<size_t>in_elem_count,
-              vector<size_t>out_elem_count,vector<size_t>&overlap_count,
-              size_t min_cont_dim, size_t block_size, size_t elm_size){
+void copy_cat(size_t cur_dim, const vector<char>&input,vector<char>&output,size_t& in_start_offset,
+              size_t& out_start_offset,vector<size_t>in_elem_count,vector<size_t>out_elem_count,
+              vector<size_t>&overlap_count,size_t min_cont_dim, size_t block_size, size_t elm_size){
     //note: all elements in and below this node is continuous on input
     //copy the continous data block
     if (cur_dim==min_cont_dim){

@@ -45,9 +45,9 @@ void getIO_OvlpGapSize(vector<size_t>&io_ovlp_gap_size,vector<size_t>&in_stride,
 
 
 /*calling function*/
-int NdCopy(const Buffer &input, const Dims &input_start, Dims &input_count,
-           Buffer &output, const Dims &output_start, Dims &output_count,
-           size_t element_size, bool dimension_reversed)
+template<class T>
+int NdCopy(const Buffer &input, const Dims &input_start, Dims &input_count, NdCopyFlag input_flag,
+           Buffer &output, const Dims &output_start, Dims &output_count, NdCopyFlag output_flag)
 {
     vector<size_t>input_end(input_start.size());
     vector<size_t>output_end(input_start.size());
@@ -68,8 +68,8 @@ int NdCopy(const Buffer &input, const Dims &input_start, Dims &input_count,
     getOverlapEnd(overlap_end, input_end, output_end);
     getOverlapCount(overlap_count,overlap_start, overlap_end);
     if (!hasOverlap(overlap_start, overlap_end)) return 1;//no overlap found
-    getIOStrides(in_stride,input_count,element_size);
-    getIOStrides(out_stride, output_count,element_size);
+    getIOStrides(in_stride,input_count,sizeof(T));
+    getIOStrides(out_stride, output_count,sizeof(T));
     getIO_OvlpGapSize(in_ovlp_gap_size,in_stride,input_count, overlap_count);
     getIO_OvlpGapSize(out_ovlp_gap_size,out_stride,output_count, overlap_count);
     getIO_OverlapBase(input_overlap_base,input,input_start,in_stride,
@@ -78,7 +78,7 @@ int NdCopy(const Buffer &input, const Dims &input_start, Dims &input_count,
                       overlap_start);
     min_cont_dim=getMinContDimn(input_start, input_count,overlap_start,
                    overlap_count);
-    block_size=getBlockSize(overlap_count, min_cont_dim, element_size);
+    block_size=getBlockSize(overlap_count, min_cont_dim, sizeof(T));
     copy_cat(0,input_overlap_base,output_overlap_base,in_ovlp_gap_size,
              out_ovlp_gap_size,overlap_count,min_cont_dim,block_size);
     //end of main algm

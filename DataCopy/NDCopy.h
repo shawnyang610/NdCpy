@@ -7,7 +7,7 @@ enum NdCopyFlag{
     RowMajorBigEndian,
     RowMajorSmallEndian,
     ColumnMajorBigEndian,
-    ColumnMajorSmallEndian,
+    ColumnMajorLittleEndian,
 };
 
 template<class T>

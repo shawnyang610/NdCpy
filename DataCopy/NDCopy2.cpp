@@ -183,14 +183,14 @@ void CopyLocalToGlobal(char *dst, const Box<Dims> &dstBox,
     }
 }
 
-int NdCopy2(const std::vector<char> &input, const std::vector<size_t> &input_start, const std::vector<size_t> &input_count,
-           std::vector<char> &output, const std::vector<size_t> &output_start, const std::vector<size_t> &output_count,
-           size_t element_size, bool dimension_reversed)
+template<class T>
+int NdCopy2(const Buffer &in_buffer, const Dims &in_start, Dims &in_count, NdCopyFlag in_flag,
+           Buffer &out_buffer, const Dims &out_start, Dims &out_count, NdCopyFlag out_flag)
 {
-    Box<Dims> dstBox = {output_start, output_count};
-    Box<Dims> srcBox = {input_start, input_count};
+    Box<Dims> dstBox = {out_start, out_count};
+    Box<Dims> srcBox = {in_start, in_count};
     Box<Dims> overlapBox;
     GetOverlap(dstBox, srcBox, overlapBox);
-    CopyLocalToGlobal(output.data(), dstBox, input.data(), srcBox, element_size, overlapBox);
+    CopyLocalToGlobal(out_buffer.data(), dstBox, in_buffer.data(), srcBox, sizeof(T), overlapBox);
     return 0;
 }

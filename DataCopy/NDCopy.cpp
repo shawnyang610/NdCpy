@@ -8,7 +8,6 @@
 
 #include <iostream>
 #include "NDCopy.h"
-
 using namespace std;
 
 /*helper functions*/
@@ -30,15 +29,17 @@ size_t getMinContDimn(const vector<size_t>&input_start,
 size_t getBlockSize(vector<size_t> overlap_count, size_t min_cont_dim,
                     size_t elm_size);
 void copy_cat(size_t cur_dim,char*& input_overlap_base,
-              char*& output_overlap_base,vector<size_t>in_elem_count,
-              vector<size_t>out_elem_count,
+              char*& output_overlap_base,vector<size_t>in_ovlp_gap_size,
+              vector<size_t>out_ovlp_gap_size,
               vector<size_t>&overlap_count,size_t min_cont_dim,size_t block_size);
-void getElmCount(vector<size_t>&io_elm_count,vector<size_t>&io_count,
-                 size_t elm_count);
+void getIOStrides(vector<size_t>&io_stride,vector<size_t>&io_count,
+                 size_t elm_size);
 void getIO_OverlapBase(char*& IO_overlap_base, Buffer io,
                                 const vector<size_t>& io_start,
                                 vector<size_t>io_elm_counts,
                                 vector<size_t>& overlap_start);
+void getIO_OvlpGapSize(vector<size_t>&io_ovlp_gap_size,vector<size_t>&in_stride,
+                       vector<size_t>&input_count,vector<size_t>&overlap_count);
 
 /*end of helper functions*/
 
@@ -53,8 +54,10 @@ int NdCopy(const Buffer &input, const Dims &input_start, Dims &input_count,
     vector<size_t>overlap_start(input_start.size());
     vector<size_t>overlap_end(input_start.size());
     vector<size_t>overlap_count(input_start.size());
-    vector<size_t>input_elm_count(input_start.size());
-    vector<size_t>output_elm_count(input_start.size());
+    vector<size_t>in_stride(input_start.size());
+    vector<size_t>out_stride(input_start.size());
+    vector<size_t>in_ovlp_gap_size(input_start.size());
+    vector<size_t>out_ovlp_gap_size(input_start.size());
     size_t min_cont_dim, block_size;
     char* input_overlap_base=NULL;
     char* output_overlap_base=NULL;
@@ -65,17 +68,19 @@ int NdCopy(const Buffer &input, const Dims &input_start, Dims &input_count,
     getOverlapEnd(overlap_end, input_end, output_end);
     getOverlapCount(overlap_count,overlap_start, overlap_end);
     if (!hasOverlap(overlap_start, overlap_end)) return 1;//no overlap found
-    getElmCount(input_elm_count,input_count,element_size);
-    getElmCount(output_elm_count, output_count,element_size);
-    getIO_OverlapBase(input_overlap_base,input,input_start,input_elm_count,
+    getIOStrides(in_stride,input_count,element_size);
+    getIOStrides(out_stride, output_count,element_size);
+    getIO_OvlpGapSize(in_ovlp_gap_size,in_stride,input_count, overlap_count);
+    getIO_OvlpGapSize(out_ovlp_gap_size,out_stride,output_count, overlap_count);
+    getIO_OverlapBase(input_overlap_base,input,input_start,in_stride,
                       overlap_start);
-    getIO_OverlapBase(output_overlap_base,output,output_start,output_elm_count,
+    getIO_OverlapBase(output_overlap_base,output,output_start,out_stride,
                       overlap_start);
     min_cont_dim=getMinContDimn(input_start, input_count,overlap_start,
                    overlap_count);
     block_size=getBlockSize(overlap_count, min_cont_dim, element_size);
-    copy_cat(0,input_overlap_base,output_overlap_base,input_elm_count,
-             output_elm_count,overlap_count,min_cont_dim,block_size);
+    copy_cat(0,input_overlap_base,output_overlap_base,in_ovlp_gap_size,
+             out_ovlp_gap_size,overlap_count,min_cont_dim,block_size);
     //end of main algm
     return 0;
 }
@@ -83,15 +88,16 @@ int NdCopy(const Buffer &input, const Dims &input_start, Dims &input_count,
 
 
 /* helper function definitions*/
-void getInputEnd(vector<size_t>& input_end, const vector<size_t>&input_start, const vector<size_t>&input_count){
+void getInputEnd(vector<size_t>& input_end, const vector<size_t>&input_start,
+                 const vector<size_t>&input_count){
     for (size_t i=0;i<input_start.size();i++)
         input_end[i]=input_start[i]+input_count[i]-1;
-};
+}
 void getOutputEnd(vector<size_t>& output_end, const vector<size_t>&output_start,
                   const vector<size_t>&output_count){
     for (size_t i=0; i<output_start.size();i++)
         output_end[i]=output_start[i]+output_count[i]-1;
-};
+}
 void getOverlapStart(vector<size_t>&overlap_start,const vector<size_t>&input_start,
                      const vector<size_t>&output_start){
     for (size_t i=0;i<overlap_start.size();i++)
@@ -112,17 +118,17 @@ bool hasOverlap(vector<size_t>&overlap_start, vector<size_t>overlap_end){
         if (overlap_end[i]<overlap_start[i]) return false;
     return true;
 }
-void getElmCount(vector<size_t>&io_elm_count,vector<size_t>&io_count,
-                 size_t elm_count){
+void getIOStrides(vector<size_t>&io_stride,vector<size_t>&io_count,
+                 size_t elm_size){
     //io_elm_count[i] holds total number of elements under each element
     //of the i'th dimension
-    io_elm_count[io_elm_count.size()-1]=1*elm_count;
-    if (io_elm_count.size()>1)
-        io_elm_count[io_elm_count.size()-2]=io_count[io_elm_count.size()-1]*elm_count;
-    if (io_elm_count.size()>2) {
-        size_t i=io_elm_count.size()-3;
+    io_stride[io_stride.size()-1]=elm_size;
+    if (io_stride.size()>1)
+        io_stride[io_stride.size()-2]=io_count[io_stride.size()-1]*elm_size;
+    if (io_stride.size()>2) {
+        size_t i=io_stride.size()-3;
         while (true){
-            io_elm_count[i]=io_count[i+1]*io_elm_count[i+1];
+            io_stride[i]=io_count[i+1]*io_stride[i+1];
             if (i==0) break;
             else i--;
         }
@@ -135,6 +141,11 @@ void getIO_OverlapBase(char*& IO_overlap_base, Buffer io,
     IO_overlap_base = io.data();
     for (size_t i=0; i<io_start.size();i++)
         IO_overlap_base+=(overlap_start[i]-io_start[i])*io_elm_counts[i];
+}
+void getIO_OvlpGapSize(vector<size_t>&io_ovlp_gap_size,vector<size_t>&in_stride,
+                       vector<size_t>&input_count,vector<size_t>&overlap_count){
+    for (size_t i=0;i<io_ovlp_gap_size.size();i++)
+        io_ovlp_gap_size[i]=(input_count[i]-overlap_count[i])*in_stride[i];
 }
 size_t getMinContDimn(const vector<size_t>&input_start, const vector<size_t>&input_count,
                       vector<size_t>&overlap_start,vector<size_t>overlap_count){
@@ -166,8 +177,8 @@ size_t getBlockSize(vector<size_t> overlap_count, size_t min_cont_dim,
  and another two additions everytime it backtracks up a dimension.
  */
 void copy_cat(size_t cur_dim,char*& input_overlap_base,
-              char*& output_overlap_base,vector<size_t>in_elem_count,
-              vector<size_t>out_elem_count,
+              char*& output_overlap_base,vector<size_t>in_ovlp_gap_size,
+              vector<size_t>out_ovlp_gap_size,
               vector<size_t>&overlap_count,size_t min_cont_dim,size_t block_size)
 {
     //note: all elements in and below this node is continuous on input
@@ -183,13 +194,13 @@ void copy_cat(size_t cur_dim,char*& input_overlap_base,
     if (cur_dim<min_cont_dim)
         for (size_t i=0; i<overlap_count[i];i++)
             copy_cat(cur_dim+1, input_overlap_base, output_overlap_base,
-                     in_elem_count,out_elem_count,overlap_count, min_cont_dim,
-                     block_size);
+                     in_ovlp_gap_size,out_ovlp_gap_size,overlap_count,
+                     min_cont_dim,block_size);
     //the gap between current node and the next needs to be padded so that
     //next continous blocks starts at the correct position for both input and output
     //the size of the gap depends on the depth in dimensions,level backtracked and
     //the difference in element counts between the Input/output and overlap area.
-    input_overlap_base+=in_elem_count[cur_dim];
-    output_overlap_base+=out_elem_count[cur_dim];
+    input_overlap_base+=in_ovlp_gap_size[cur_dim];
+    output_overlap_base+=out_ovlp_gap_size[cur_dim];
 }
 /*end of helper function definitions*/

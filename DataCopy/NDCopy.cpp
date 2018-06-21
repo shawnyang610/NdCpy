@@ -46,9 +46,9 @@ void getIO_OvlpGapSize(vector<size_t>&io_ovlp_gap_size,vector<size_t>&in_stride,
 
 /*calling function*/
 template<class T>
-int NdCopy(const Buffer &input, const Dims &input_start, Dims &input_count, NdCopyFlag input_flag,
-           Buffer &output, const Dims &output_start, Dims &output_count, NdCopyFlag output_flag)
-{
+int NdCopy(const Buffer &input, const Dims &input_start, Dims &input_count,
+           NdCopyFlag input_flag,Buffer &output, const Dims &output_start,
+           Dims &output_count, NdCopyFlag output_flag){
     vector<size_t>input_end(input_start.size());
     vector<size_t>output_end(input_start.size());
     vector<size_t>overlap_start(input_start.size());

@@ -28,17 +28,17 @@ size_t getMinContDimn(const vector<size_t>&input_start,
                       vector<size_t>&overlap_start, vector<size_t>overlap_count);
 size_t getBlockSize(vector<size_t> overlap_count, size_t min_cont_dim,
                     size_t elm_size);
-void copy_cat(size_t cur_dim,char*& input_overlap_base,
+void copyCat(size_t cur_dim,char*& input_overlap_base,
               char*& output_overlap_base,vector<size_t>in_ovlp_gap_size,
               vector<size_t>out_ovlp_gap_size,
               vector<size_t>&overlap_count,size_t min_cont_dim,size_t block_size);
 void getIOStrides(vector<size_t>&io_stride,vector<size_t>&io_count,
                  size_t elm_size);
-void getIO_OverlapBase(char*& IO_overlap_base, Buffer io,
+void getIoOverlapBase(char*& IO_overlap_base, Buffer io,
                                 const vector<size_t>& io_start,
                                 vector<size_t>io_elm_counts,
                                 vector<size_t>& overlap_start);
-void getIO_OvlpGapSize(vector<size_t>&io_ovlp_gap_size,vector<size_t>&in_stride,
+void getIoOverlapGapSize(vector<size_t>&io_ovlp_gap_size,vector<size_t>&in_stride,
                        vector<size_t>&input_count,vector<size_t>&overlap_count);
 
 /*end of helper functions*/
@@ -70,16 +70,16 @@ int NdCopy(const Buffer &input, const Dims &input_start, Dims &input_count,
     if (!hasOverlap(overlap_start, overlap_end)) return 1;//no overlap found
     getIOStrides(in_stride,input_count,sizeof(T));
     getIOStrides(out_stride, output_count,sizeof(T));
-    getIO_OvlpGapSize(in_ovlp_gap_size,in_stride,input_count, overlap_count);
-    getIO_OvlpGapSize(out_ovlp_gap_size,out_stride,output_count, overlap_count);
-    getIO_OverlapBase(input_overlap_base,input,input_start,in_stride,
+    getIoOverlapGapSize(in_ovlp_gap_size,in_stride,input_count, overlap_count);
+    getIoOverlapGapSize(out_ovlp_gap_size,out_stride,output_count, overlap_count);
+    getIoOverlapBase(input_overlap_base,input,input_start,in_stride,
                       overlap_start);
-    getIO_OverlapBase(output_overlap_base,output,output_start,out_stride,
+    getIoOverlapBase(output_overlap_base,output,output_start,out_stride,
                       overlap_start);
     min_cont_dim=getMinContDimn(input_start, input_count,overlap_start,
                    overlap_count);
     block_size=getBlockSize(overlap_count, min_cont_dim, sizeof(T));
-    copy_cat(0,input_overlap_base,output_overlap_base,in_ovlp_gap_size,
+    copyCat(0,input_overlap_base,output_overlap_base,in_ovlp_gap_size,
              out_ovlp_gap_size,overlap_count,min_cont_dim,block_size);
     //end of main algm
     return 0;
@@ -134,7 +134,7 @@ void getIOStrides(vector<size_t>&io_stride,vector<size_t>&io_count,
         }
     }
 }
-void getIO_OverlapBase(char*& IO_overlap_base, Buffer io,
+void getIoOverlapBase(char*& IO_overlap_base, Buffer io,
                        const vector<size_t>& io_start,
                        vector<size_t>io_elm_counts,
                        vector<size_t>& overlap_start){
@@ -142,7 +142,7 @@ void getIO_OverlapBase(char*& IO_overlap_base, Buffer io,
     for (size_t i=0; i<io_start.size();i++)
         IO_overlap_base+=(overlap_start[i]-io_start[i])*io_elm_counts[i];
 }
-void getIO_OvlpGapSize(vector<size_t>&io_ovlp_gap_size,vector<size_t>&in_stride,
+void getIoOvlpGapSize(vector<size_t>&io_ovlp_gap_size,vector<size_t>&in_stride,
                        vector<size_t>&input_count,vector<size_t>&overlap_count){
     for (size_t i=0;i<io_ovlp_gap_size.size();i++)
         io_ovlp_gap_size[i]=(input_count[i]-overlap_count[i])*in_stride[i];
@@ -176,7 +176,7 @@ size_t getBlockSize(vector<size_t> overlap_count, size_t min_cont_dim,
  the computational overhead for copying each block = two additions,
  and another two additions everytime it backtracks up a dimension.
  */
-void copy_cat(size_t cur_dim,char*& input_overlap_base,
+void copyCat(size_t cur_dim,char*& input_overlap_base,
               char*& output_overlap_base,vector<size_t>in_ovlp_gap_size,
               vector<size_t>out_ovlp_gap_size,
               vector<size_t>&overlap_count,size_t min_cont_dim,size_t block_size)
@@ -193,7 +193,7 @@ void copy_cat(size_t cur_dim,char*& input_overlap_base,
     //on a deeper level, stops upon reaching min_cont_dim
     if (cur_dim<min_cont_dim)
         for (size_t i=0; i<overlap_count[i];i++)
-            copy_cat(cur_dim+1, input_overlap_base, output_overlap_base,
+            copyCat(cur_dim+1, input_overlap_base, output_overlap_base,
                      in_ovlp_gap_size,out_ovlp_gap_size,overlap_count,
                      min_cont_dim,block_size);
     //the gap between current node and the next needs to be padded so that

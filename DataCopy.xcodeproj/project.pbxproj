@@ -32,6 +32,7 @@
 		290AAA3020DAF1A3004D9C7E /* makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = makefile; sourceTree = "<group>"; };
 		290AAA3120DAF1A4004D9C7E /* NDCopy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NDCopy.h; sourceTree = "<group>"; };
 		290AAA3220DAF1A4004D9C7E /* NDCopy2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NDCopy2.cpp; sourceTree = "<group>"; };
+		2925FC8120DD63C80096FAE8 /* Doc */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Doc; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -48,6 +49,7 @@
 		290AAA0320D75ED7004D9C7E = {
 			isa = PBXGroup;
 			children = (
+				2925FC8120DD63C80096FAE8 /* Doc */,
 				290AAA0E20D75ED8004D9C7E /* DataCopy */,
 				290AAA0D20D75ED8004D9C7E /* Products */,
 			);

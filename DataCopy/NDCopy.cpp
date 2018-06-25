@@ -7,6 +7,7 @@
 //
 
 #include <iostream>
+#include <cstring>
 #include "NDCopy.h"
 using namespace std;
 
@@ -184,7 +185,7 @@ void copyCat(size_t cur_dim,char*& input_overlap_base,
     //note: all elements in and below this node is continuous on input
     //copy the continous data block
     if (cur_dim==min_cont_dim){
-        memcpy(output_overlap_base, input_overlap_base,
+        std::memcpy(output_overlap_base, input_overlap_base,
                block_size);
         input_overlap_base+=block_size;
         output_overlap_base+=block_size;

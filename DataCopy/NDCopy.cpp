@@ -7,6 +7,8 @@
 //
 
 #include <iostream>
+#include <cstring>
+#include <algorithm>
 #include "NDCopy.h"
 using namespace std;
 
@@ -111,7 +113,7 @@ void copyCat(size_t cur_dim,char*& input_overlap_base,
   //note: all elements in and below this node is continuous on input
   //copy the continous data block
   if (cur_dim==min_cont_dim){
-    memcpy(output_overlap_base, input_overlap_base,
+      std::memcpy(output_overlap_base, input_overlap_base,
            block_size);
     input_overlap_base+=block_size;
     output_overlap_base+=block_size;
@@ -227,8 +229,8 @@ int NdCopy(const Buffer &input, const Dims &input_start, Dims &input_count,
   size_t min_cont_dim, block_size;
   char* input_overlap_base=nullptr;
   char* output_overlap_base=nullptr;
-  
-  
+
+
   if (copyMode(input_flag,output_flag)=="same_maj_same_endian"){
     getInputEnd(input_end,input_start,input_count);
     getOutputEnd(output_end,output_start,output_count);
@@ -251,7 +253,7 @@ int NdCopy(const Buffer &input, const Dims &input_start, Dims &input_count,
             out_ovlp_gap_size,overlap_count,min_cont_dim,block_size);
   }
   else if (copyMode(input_flag,output_flag)=="same_maj_dif_endian"){
-    
+
   }
   else if (copyMode(input_flag,output_flag)=="dif_maj_same_endian"){
     //avg computational overhead is O(1) for each intersecting byte
@@ -272,10 +274,10 @@ int NdCopy(const Buffer &input, const Dims &input_start, Dims &input_count,
     flipCopyByByte(0,input_overlap_base,output_overlap_base,InRelOvlpHeadPos,
                    outRelOvlpHeadPos,in_stride,out_stride,overlap_count,sizeof(T));
   }
-  
+
   //diff_maj_dif_endian
   else {
-    
+
   }
   //end of main algm
   return 0;

@@ -9,6 +9,7 @@
 #include <iostream>
 #include <numeric>
 
+#include "NDCopy2.tcc"
 #include "NDCopy.h"
 
 void PrintDims(const Dims &dims, const std::string &name){
@@ -23,27 +24,21 @@ void PrintDims(const Dims &dims, const std::string &name){
 }
 
 template<class T>
-void PrintData(const Buffer buffer){
-    for(size_t i = 0; i < buffer.size() / sizeof(T); ++i){
-        std::cout << (reinterpret_cast<T>(buffer))[i];
+void PrintData(const Buffer &buffer, const Dims &count){
+    size_t total_elements = accumulate(count.begin(), count.end(), 1,std::multiplies<size_t>());
+    for(size_t i = 0; i < total_elements; ++i){
+        std::cout << reinterpret_cast<const T *>(buffer.data())[i] << "\t";
+        if((i+1)%count.back() == 0){
+            std::cout << std::endl;
+        }
     }
-}
-
-Dims GenGlobalShape(const Dims &input_start, const Dims &input_count, const Dims &output_start, const Dims &output_count){
-    Dims global_shape(input_count.size());
-    for(size_t i=0; i<input_count.size(); ++i){
-        global_shape[i] = (input_start[i] + input_count[i] < output_start[i] + output_count[i]) ? output_start[i] + output_count[i] : input_start[i] + input_count[i];
-    }
-    return global_shape;
+    std::cout << std::endl;
 }
 
 template<class T>
-void MakeData(Buffer &buffer, const Dims &input_start, const Dims &input_count, const Dims &output_start, const Dims &output_count, bool zero){
-    // TODO: verify data generated
-    Dims global_shape = GenGlobalShape(input_start, input_count, output_start, output_count);
-    size_t global_size = std::accumulate(global_shape.begin(), global_shape.end(), 1, std::multiplies<size_t>());
-    size_t global_bytes = global_size * sizeof(T);
-    for(size_t i=0; i<global_size; ++i){
+void MakeData(Buffer &buffer, const Dims &count, bool zero){
+    size_t size = std::accumulate(count.begin(), count.end(), 1, std::multiplies<size_t>());
+    for(size_t i=0; i<size; ++i){
         if(zero){
             reinterpret_cast<T*>(buffer.data())[i] = 0;
         }
@@ -53,22 +48,42 @@ void MakeData(Buffer &buffer, const Dims &input_start, const Dims &input_count, 
     }
 }
 
+template<class T>
+void RunTest(const Dims &input_start, const Dims &input_count, const Dims &output_start, const Dims &output_count){
+
+    Buffer input_buffer, output_buffer;
+
+    input_buffer.resize(std::accumulate(input_count.begin(), input_count.end(), sizeof(T), std::multiplies<size_t>()));
+    MakeData<int>(input_buffer, input_count, false);
+
+    output_buffer.resize(std::accumulate(output_count.begin(), output_count.end(), sizeof(T), std::multiplies<size_t>()));
+    NdCopy2<int>(
+            input_buffer,
+            input_start,
+            input_count,
+            RowMajorBigEndian,
+            output_buffer,
+            output_start,
+            output_count,
+            RowMajorBigEndian
+            );
+
+    std::cout << "*************** input_buffer ****************" << std::endl;
+    PrintData<int>(input_buffer, input_count);
+    std::cout << "*************** output_buffer ****************" << std::endl;
+    PrintData<int>(output_buffer, output_count);
+}
+
+
 int main(int argc, const char * argv[]) {
 
-    Dims input_start = {20,40,60};
-    Dims input_count = {100,200,300};
+    Dims input_start = {10,20};
+    Dims input_count = {5,8};
 
-    Dims output_start = {100,20,300};
-    Dims output_count = {200,100,400};
+    Dims output_start = {0,0};
+    Dims output_count = {30,30};
 
-    // Generate data
-    Buffer input_buffer;
-    MakeData<int>(input_buffer, input_start, input_count, output_start, output_count, false);
-
-
-    PrintDims(input_start, "input_start");
-
-
+    RunTest<int>(input_start, input_count, output_start, output_count);
 
     return 0;
 }

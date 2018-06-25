@@ -1,10 +1,9 @@
 #include <vector>
 #include <numeric>
+#include <functional>
+#include <cstring>
 
-#include "NDCopy.h"
-
-template <class T>
-using Box = std::pair<T, T>;
+#include "NDCopy2.tcc"
 
 bool IsContinuous(const Box<Dims> &inner,
                                        const Box<Dims> &outer)
@@ -183,14 +182,3 @@ void CopyLocalToGlobal(char *dst, const Box<Dims> &dstBox,
     }
 }
 
-template<class T>
-int NdCopy2(const Buffer &in_buffer, const Dims &in_start, Dims &in_count, NdCopyFlag in_flag,
-           Buffer &out_buffer, const Dims &out_start, Dims &out_count, NdCopyFlag out_flag)
-{
-    Box<Dims> dstBox = {out_start, out_count};
-    Box<Dims> srcBox = {in_start, in_count};
-    Box<Dims> overlapBox;
-    GetOverlap(dstBox, srcBox, overlapBox);
-    CopyLocalToGlobal(out_buffer.data(), dstBox, in_buffer.data(), srcBox, sizeof(T), overlapBox);
-    return 0;
-}

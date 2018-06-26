@@ -11,6 +11,8 @@
 		290AAA1720DA0929004D9C7E /* NDCopy.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 290AAA1620DA0929004D9C7E /* NDCopy.cpp */; };
 		290AAA3320DAF1A4004D9C7E /* makefile in Sources */ = {isa = PBXBuildFile; fileRef = 290AAA3020DAF1A3004D9C7E /* makefile */; };
 		290AAA3420DAF1A4004D9C7E /* NDCopy2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 290AAA3220DAF1A4004D9C7E /* NDCopy2.cpp */; };
+		299983B120E1BB7B000FA806 /* NDCopy2.tcc in Sources */ = {isa = PBXBuildFile; fileRef = 299983B020E1BB7B000FA806 /* NDCopy2.tcc */; };
+		299983B220E28A86000FA806 /* NDCopy.h in Sources */ = {isa = PBXBuildFile; fileRef = 290AAA3120DAF1A4004D9C7E /* NDCopy.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -33,6 +35,7 @@
 		290AAA3120DAF1A4004D9C7E /* NDCopy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NDCopy.h; sourceTree = "<group>"; };
 		290AAA3220DAF1A4004D9C7E /* NDCopy2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NDCopy2.cpp; sourceTree = "<group>"; };
 		2925FC8120DD63C80096FAE8 /* Doc */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Doc; sourceTree = "<group>"; };
+		299983B020E1BB7B000FA806 /* NDCopy2.tcc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NDCopy2.tcc; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -66,6 +69,7 @@
 		290AAA0E20D75ED8004D9C7E /* DataCopy */ = {
 			isa = PBXGroup;
 			children = (
+				299983B020E1BB7B000FA806 /* NDCopy2.tcc */,
 				290AAA3020DAF1A3004D9C7E /* makefile */,
 				290AAA3120DAF1A4004D9C7E /* NDCopy.h */,
 				290AAA3220DAF1A4004D9C7E /* NDCopy2.cpp */,
@@ -131,10 +135,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				299983B220E28A86000FA806 /* NDCopy.h in Sources */,
 				290AAA1720DA0929004D9C7E /* NDCopy.cpp in Sources */,
 				290AAA1020D75ED8004D9C7E /* main.cpp in Sources */,
 				290AAA3320DAF1A4004D9C7E /* makefile in Sources */,
 				290AAA3420DAF1A4004D9C7E /* NDCopy2.cpp in Sources */,
+				299983B120E1BB7B000FA806 /* NDCopy2.tcc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -253,6 +259,7 @@
 		290AAA1420D75ED8004D9C7E /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
 				CODE_SIGN_STYLE = Automatic;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -261,6 +268,7 @@
 		290AAA1520D75ED8004D9C7E /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
 				CODE_SIGN_STYLE = Automatic;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};

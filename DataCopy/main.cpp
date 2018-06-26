@@ -8,9 +8,10 @@
 
 #include <iostream>
 #include <numeric>
-
+#include "NDCopy.cpp"
 #include "NDCopy2.tcc"
 #include "NDCopy.h"
+
 
 void PrintDims(const Dims &dims, const std::string &name){
     std::string s;
@@ -73,7 +74,34 @@ void RunTest(const Dims &input_start, const Dims &input_count, const Dims &outpu
     std::cout << "*************** output_buffer ****************" << std::endl;
     PrintData<int>(output_buffer, output_count);
 }
+template<class T>
+void RunTest2(const Dims &input_start, const Dims &input_count, const Dims &output_start, const Dims &output_count){
 
+  Buffer input_buffer, output_buffer;
+
+  input_buffer.resize(std::accumulate(input_count.begin(), input_count.end(), sizeof(T), std::multiplies<size_t>()));
+  MakeData<int>(input_buffer, input_count, false);
+
+  output_buffer.resize(std::accumulate(output_count.begin(), output_count.end(), sizeof(T), std::multiplies<size_t>()));
+  if(NdCopy<int>(
+               input_buffer,
+               input_start,
+               input_count,
+               RowMajorBigEndian,
+               output_buffer,
+               output_start,
+               output_count,
+               RowMajorBigEndian
+               ))
+  {
+    std::cout<<"no overlap found"<<std::endl;
+  }
+
+  std::cout << "*************** input_buffer ****************" << std::endl;
+  PrintData<int>(input_buffer, input_count);
+  std::cout << "*************** output_buffer ****************" << std::endl;
+  PrintData<int>(output_buffer, output_count);
+}
 
 int main(int argc, const char * argv[]) {
 
@@ -84,6 +112,14 @@ int main(int argc, const char * argv[]) {
     Dims output_count = {30,30};
 
     RunTest<int>(input_start, input_count, output_start, output_count);
+    RunTest2<int>(input_start, input_count, output_start, output_count);
+  
+//    input_start = {10,20,15,5,2,3,5,5,5};
+//    input_count = { 2, 2, 2,4,2,3,5,5,5};
+//    output_start = {8,20,15,5,2,3,5,5,5};
+//    output_count = {6, 5, 2,4,2,3,5,5,5};
+//    RunTest<int>(input_start, input_count, output_start, output_count);
+//    RunTest2<int>(input_start, input_count, output_start, output_count);
 
     return 0;
 }

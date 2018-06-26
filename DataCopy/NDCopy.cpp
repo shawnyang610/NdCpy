@@ -6,6 +6,7 @@
 //  Copyright © 2018 Shawn Yang. All rights reserved.
 //
 #include <algorithm>
+#include <cstring>
 #include "NDCopy.h"
 
 /*helper functions*/
@@ -229,7 +230,7 @@ int NdCopy(const Buffer &input, const Dims &input_start, const Dims &input_count
   char* input_overlap_base=nullptr;
   char* output_overlap_base=nullptr;
   if (copyMode(input_flag,output_flag)=="same_maj_same_endian"){
-    std::cout<<"NDCopy copyMode selection:same_maj_same_endian "<<std::endl;
+//    std::cout<<"NDCopy copyMode selection:same_maj_same_endian "<<std::endl;
     getInputEnd(input_end,input_start,input_count);
     getOutputEnd(output_end,output_start,output_count);
     getOverlapStart(overlap_start,input_start, output_start);
@@ -244,7 +245,7 @@ int NdCopy(const Buffer &input, const Dims &input_start, const Dims &input_count
                      overlap_start);
     getIoOverlapBase(output_overlap_base,output,output_start,out_stride,
                      overlap_start);
-    
+
     min_cont_dim=getMinContDimn(input_count,output_count,overlap_count);
     block_size=getBlockSize(overlap_count, min_cont_dim, sizeof(T));
     copyCat(0,input_overlap_base,output_overlap_base,in_ovlp_gap_size,

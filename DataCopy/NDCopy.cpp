@@ -184,28 +184,25 @@ static void getFlippedIOStrides(Dims& io_stride,
   //reverse stride to the same order as input for easy access
   reverse(io_stride.begin(), io_stride.end());
 }
-static void flipCopyByByte(size_t curDim, char* inBase,char* outBase,
+static void flippedCopyCat(size_t curDim, char* inBase,char* outBase,
                     Dims& InRelOvlpHeadPos,
                     Dims& outRelOvlpHeadPos,Dims& in_stride,
                     Dims& out_stride,Dims& overlap_count,
                     size_t elmSize){
-  //Note: in_stride and out_stride have 1 extra dimension-the "byte" dim.
-  //index in_stride.size()-1 is the last dim which is the byte dim.
-  if (curDim==in_stride.size()-1){
+  if (curDim==in_stride.size()){
     for (size_t i=0; i<elmSize;i++){
-      memcpy(outBase+i*out_stride[curDim], inBase+i*in_stride[curDim], 1);
+      memcpy(outBase, inBase, elmSize);
     }
   }
   else {
-    for (size_t i=0; i<overlap_count[i];i++){
-      flipCopyByByte(curDim+1,
+    for (size_t i=0; i<overlap_count[curDim];i++){
+      flippedCopyCat(curDim+1,
                      inBase+(InRelOvlpHeadPos[curDim]+i)*in_stride[curDim],
                      outBase+(outRelOvlpHeadPos[curDim]+i)*out_stride[curDim],
                      InRelOvlpHeadPos,outRelOvlpHeadPos, in_stride,out_stride,
                      overlap_count, elmSize);
     }
   }
-  //todo
 }
 /*end of helper functions*/
 
@@ -230,7 +227,6 @@ int NdCopy(const Buffer &input, const Dims &input_start, const Dims &input_count
   char* input_overlap_base=nullptr;
   char* output_overlap_base=nullptr;
   if (copyMode(input_flag,output_flag)=="same_maj_same_endian"){
-//    std::cout<<"NDCopy copyMode selection:same_maj_same_endian "<<std::endl;
     getInputEnd(input_end,input_start,input_count);
     getOutputEnd(output_end,output_start,output_count);
     getOverlapStart(overlap_start,input_start, output_start);
@@ -260,20 +256,24 @@ int NdCopy(const Buffer &input, const Dims &input_start, const Dims &input_count
 
     //avg computational overhead is O(1) for each intersecting byte
     //worst case can be O(n) where n is number of dimensions
+    Dims output_start_rev(output_start);
+    Dims output_count_rev(output_count);
+    std::reverse(output_start_rev.begin(), output_start_rev.end());
+    std::reverse(output_count_rev.begin(), output_count_rev.end());
     getInputEnd(input_end,input_start,input_count);
-    getOutputEnd(output_end,output_start,output_count);
-    getOverlapStart(overlap_start,input_start, output_start);
+    getOutputEnd(output_end,output_start_rev,output_count_rev);
+    getOverlapStart(overlap_start,input_start, output_start_rev);
     getOverlapEnd(overlap_end, input_end, output_end);
     getOverlapCount(overlap_count,overlap_start, overlap_end);
     if (!hasOverlap(overlap_start, overlap_end)) return 1;//no overlap found
     getIOStrides(in_stride,input_count,sizeof(T));
-    in_stride.push_back(1); //adds an additional "byte" dimension
-    getFlippedIOStrides(out_stride, output_count,sizeof(T));
+    getIOStrides(out_stride, output_count, sizeof(T));
+    std::reverse(out_stride.begin(), out_stride.end());
     getRelativeOvlpHeadPos(InRelOvlpHeadPos,input_start,overlap_start);
-    getRelativeOvlpHeadPos(outRelOvlpHeadPos, output_start,overlap_start);
+    getRelativeOvlpHeadPos(outRelOvlpHeadPos, output_start_rev,overlap_start);
     input_overlap_base=(char*)input.data();
     output_overlap_base=output.data();
-    flipCopyByByte(0,input_overlap_base,output_overlap_base,InRelOvlpHeadPos,
+    flippedCopyCat(0,input_overlap_base,output_overlap_base,InRelOvlpHeadPos,
                    outRelOvlpHeadPos,in_stride,out_stride,overlap_count,sizeof(T));
   }
 

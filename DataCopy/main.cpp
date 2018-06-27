@@ -1,10 +1,3 @@
-//
-//  main.cpp
-//  DataCopy
-//
-//  Created by Shawn Yang on 6/17/18.
-//  Copyright © 2018 Shawn Yang. All rights reserved.
-//
 
 #include <iostream>
 #include <numeric>
@@ -131,6 +124,40 @@ void RunTest(const Dims &input_start, const Dims &input_count, const Dims &outpu
     }
 }
 
+
+
+template<class T>
+void RunTestDiffMajorMode(const Dims &input_start, const Dims &input_count, const Dims &output_start,
+              const Dims &output_count)
+{
+  Buffer input_buffer, output_buffer, output_buffer2;
+  
+  input_buffer.resize(std::accumulate(input_count.begin(), input_count.end(), sizeof(T), std::multiplies<size_t>()));
+  output_buffer.resize(std::accumulate(output_count.begin(), output_count.end(), sizeof(T), std::multiplies<size_t>()));
+  output_buffer2.resize(std::accumulate(output_count.begin(), output_count.end(), sizeof(T), std::multiplies<size_t>()));
+  
+  MakeData<int>(input_buffer, input_count, false);
+  if(NdCopy<int>(
+                 input_buffer,
+                 input_start,
+                 input_count,
+                 RowMajorBigEndian,
+                 output_buffer,
+                 output_start,
+                 output_count,
+                 ColumnMajorBigEndian
+                 ))
+  {
+    std::cout<<"no overlap found"<<std::endl;
+  }
+      std::cout << "*************** input_buffer ****************" << std::endl;
+      PrintData<int>(input_buffer, input_count);
+      std::cout << "*************** output_buffer ****************" << std::endl;
+      PrintData<int>(output_buffer, output_count);
+}
+
+
+
 int main(int argc, const char * argv[]) {
 
     int iters = 10;
@@ -138,21 +165,35 @@ int main(int argc, const char * argv[]) {
     if(argc > 1){
         iters = atoi(argv[1]);
     }
+//memory addr. calc. performance test:
+//both algorithm, only 1 element is copied at a time
+//    Dims input_start = {1,1,1,1,1,1,1,1,1};
+//    Dims input_count = {5,5,5,5,5,5,5,5,1};
+//    Dims output_start = {1,1,1,1,1,1,1,1,1};
+//    Dims output_count = {5,5,5,5,5,5,5,5,5};
+//    RunTest<int>(input_start, input_count, output_start, output_count, iters);
+  
+//largest-continous-block-method performance test
+//    Dims input_start = {1,1,1,1,1,1,1,1,1};
+//    Dims input_count = {5,1,5,5,5,5,5,5,1};
+//    Dims output_start = {1,1,1,1,1,1,1,1,1};
+//    Dims output_count = {5,5,5,5,5,5,5,5,5};
+//    RunTest<int>(input_start, input_count, output_start, output_count, iters);
 
-    Dims input_start = {0,0,0};
-    Dims input_count = {200,400,600};
+    // diff-maj-same-endian demo
+    Dims input_start = {5,10};
+    Dims input_count = {5,10};
+    Dims output_start = {10,5};
+    Dims output_count = {20,10};
+    RunTestDiffMajorMode<int>(input_start, input_count, output_start, output_count);
 
-    Dims output_start = {0,0,0};
-    Dims output_count = {800,800,800};
-
-    RunTest<int>(input_start, input_count, output_start, output_count, iters);
-
-//    input_start = {10,20,15,5,2,3,5,5,5};
-//    input_count = { 2, 2, 2,4,2,3,5,5,5};
-//    output_start = {8,20,15,5,2,3,5,5,5};
-//    output_count = {6, 5, 2,4,2,3,5,5,5};
-//    RunTest<int>(input_start, input_count, output_start, output_count);
-//    RunTest2<int>(input_start, input_count, output_start, output_count);
-
+  //todo performance test: diff-maj-same-endian vs same-maj-same-endian:
+  //copy 1 element at a time. anticipation: same-maj algm should be slightly faster
+  //due to the way mem address is calculated in diff-maj where 2 additional multiplications
+  //are used for each element copied, but in both case, avg overhead is still O(1)
+  
+  
+  
+  
     return 0;
 }

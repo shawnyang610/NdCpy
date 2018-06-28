@@ -59,6 +59,7 @@ static void getIOStrides(Dims&io_stride,const Dims&io_count,
     }
   }
 }
+
 static void getIoOverlapBase(char *& IO_overlap_base, const Buffer& io,
                       const Dims& io_start,
                       Dims &io_stride,
@@ -131,6 +132,33 @@ static void copyCat(size_t cur_dim,char*& input_overlap_base,
   input_overlap_base+=in_ovlp_gap_size[cur_dim];
   output_overlap_base+=out_ovlp_gap_size[cur_dim];
 }
+static void endianCopyCat(size_t cur_dim,char*& input_overlap_base,
+                    char*& output_overlap_base,Dims& in_ovlp_gap_size,
+                    Dims& out_ovlp_gap_size,
+                    Dims& overlap_count,size_t min_cont_dim,size_t block_size,
+                          size_t elmSize, size_t numElmPerBlock)
+{
+  if (cur_dim==min_cont_dim){
+    //only the following block is different from the original copyCat
+    //each all bytes of each element in the continuous block needs
+    //to be copied in reverse order
+    for(size_t i=0;i<numElmPerBlock;i++){
+      for(size_t j=0; j<elmSize;j++){
+        output_overlap_base[0]=input_overlap_base[elmSize-1-j];
+      }
+      input_overlap_base+=elmSize;
+      output_overlap_base+=elmSize;
+    }
+  }
+  
+  if (cur_dim<min_cont_dim)
+    for (size_t i=0; i<overlap_count[cur_dim];i++)
+      copyCat(cur_dim+1, input_overlap_base, output_overlap_base,
+              in_ovlp_gap_size,out_ovlp_gap_size,overlap_count,
+              min_cont_dim,block_size);
+  input_overlap_base+=in_ovlp_gap_size[cur_dim];
+  output_overlap_base+=out_ovlp_gap_size[cur_dim];
+}
 
 static std::string copyMode(NdCopyFlag& input_flag, NdCopyFlag& output_flag){
   if ((input_flag==RowMajorBigEndian && output_flag==RowMajorBigEndian)||
@@ -190,9 +218,30 @@ static void flippedCopyCat(size_t curDim, char* inBase,char* outBase,
                     Dims& out_stride,Dims& overlap_count,
                     size_t elmSize){
   if (curDim==in_stride.size()){
-    for (size_t i=0; i<elmSize;i++){
-      memcpy(outBase, inBase, elmSize);
+    memcpy(outBase, inBase, elmSize);
+  }
+  else {
+    for (size_t i=0; i<overlap_count[curDim];i++){
+      flippedCopyCat(curDim+1,
+                     inBase+(InRelOvlpHeadPos[curDim]+i)*in_stride[curDim],
+                     outBase+(outRelOvlpHeadPos[curDim]+i)*out_stride[curDim],
+                     InRelOvlpHeadPos,outRelOvlpHeadPos, in_stride,out_stride,
+                     overlap_count, elmSize);
     }
+  }
+}
+static void flippedEndianCopyCat(size_t curDim, char* inBase,char* outBase,
+                           Dims& InRelOvlpHeadPos,
+                           Dims& outRelOvlpHeadPos,Dims& in_stride,
+                           Dims& out_stride,Dims& overlap_count,
+                           size_t elmSize){
+  if (curDim==in_stride.size()){
+    //the following for-loop block is the only difference from the original
+    //flippedCopyCat
+    for (size_t i=0; i<elmSize;i++){
+      outBase[i]=inBase[elmSize-1-i];
+    }
+    
   }
   else {
     for (size_t i=0; i<overlap_count[curDim];i++){
@@ -249,7 +298,26 @@ int NdCopy(const Buffer &input, const Dims &input_start, const Dims &input_count
   }
   else if (copyMode(input_flag,output_flag)=="same_maj_dif_endian"){
     std::cout<<"NDCopy copyMode selection:same_maj_dif_endian "<<std::endl;
-
+    getInputEnd(input_end,input_start,input_count);
+    getOutputEnd(output_end,output_start,output_count);
+    getOverlapStart(overlap_start,input_start, output_start);
+    getOverlapEnd(overlap_end, input_end, output_end);
+    getOverlapCount(overlap_count,overlap_start, overlap_end);
+    if (!hasOverlap(overlap_start, overlap_end)) return 1;//no overlap found
+    getIOStrides(in_stride,input_count,sizeof(T));
+    getIOStrides(out_stride, output_count,sizeof(T));
+    getIoOvlpGapSize(in_ovlp_gap_size,in_stride,input_count, overlap_count);
+    getIoOvlpGapSize(out_ovlp_gap_size,out_stride,output_count, overlap_count);
+    getIoOverlapBase(input_overlap_base,input,input_start,in_stride,
+                     overlap_start);
+    getIoOverlapBase(output_overlap_base,output,output_start,out_stride,
+                     overlap_start);
+    
+    min_cont_dim=getMinContDimn(input_count,output_count,overlap_count);
+    block_size=getBlockSize(overlap_count, min_cont_dim, sizeof(T));
+    endianCopyCat(0,input_overlap_base,output_overlap_base,in_ovlp_gap_size,
+            out_ovlp_gap_size,overlap_count,min_cont_dim,block_size,sizeof(T),
+                  block_size/sizeof(T));
   }
   else if (copyMode(input_flag,output_flag)=="dif_maj_same_endian"){
     std::cout<<"NDCopy copyMode selection:dif_maj_same_endian "<<std::endl;
@@ -280,7 +348,25 @@ int NdCopy(const Buffer &input, const Dims &input_start, const Dims &input_count
   //diff_maj_dif_endian
   else {
     std::cout<<"NDCopy copyMode selection:dif_maj_dif_endian "<<std::endl;
-
+    Dims output_start_rev(output_start);
+    Dims output_count_rev(output_count);
+    std::reverse(output_start_rev.begin(), output_start_rev.end());
+    std::reverse(output_count_rev.begin(), output_count_rev.end());
+    getInputEnd(input_end,input_start,input_count);
+    getOutputEnd(output_end,output_start_rev,output_count_rev);
+    getOverlapStart(overlap_start,input_start, output_start_rev);
+    getOverlapEnd(overlap_end, input_end, output_end);
+    getOverlapCount(overlap_count,overlap_start, overlap_end);
+    if (!hasOverlap(overlap_start, overlap_end)) return 1;//no overlap found
+    getIOStrides(in_stride,input_count,sizeof(T));
+    getIOStrides(out_stride, output_count, sizeof(T));
+    std::reverse(out_stride.begin(), out_stride.end());
+    getRelativeOvlpHeadPos(InRelOvlpHeadPos,input_start,overlap_start);
+    getRelativeOvlpHeadPos(outRelOvlpHeadPos, output_start_rev,overlap_start);
+    input_overlap_base=(char*)input.data();
+    output_overlap_base=output.data();
+    flippedEndianCopyCat(0,input_overlap_base,output_overlap_base,InRelOvlpHeadPos,
+                   outRelOvlpHeadPos,in_stride,out_stride,overlap_count,sizeof(T));
   }
   return 0;
 }

@@ -150,7 +150,7 @@ static void endianCopyCat(size_t cur_dim,char*& input_overlap_base,
       output_overlap_base+=elmSize;
     }
   }
-  
+
   if (cur_dim<min_cont_dim)
     for (size_t i=0; i<overlap_count[cur_dim];i++)
       copyCat(cur_dim+1, input_overlap_base, output_overlap_base,
@@ -161,26 +161,15 @@ static void endianCopyCat(size_t cur_dim,char*& input_overlap_base,
 }
 
 static std::string copyMode(NdCopyFlag& input_flag, NdCopyFlag& output_flag){
-  if ((input_flag==RowMajorBigEndian && output_flag==RowMajorBigEndian)||
-      (input_flag==ColumnMajorBigEndian && output_flag==ColumnMajorBigEndian)||
-      (input_flag==RowMajorSmallEndian && output_flag==RowMajorSmallEndian)||
-      (input_flag==ColumnMajorLittleEndian && output_flag==ColumnMajorLittleEndian))
+  if (input_flag.isRowMajor == output_flag.isRowMajor && input_flag.isBigEndian == output_flag.isBigEndian)
   {
     return "same_maj_same_endian";
   }
-  else if ((input_flag==RowMajorBigEndian && output_flag==RowMajorSmallEndian)||
-           (input_flag==RowMajorSmallEndian&&output_flag==RowMajorBigEndian)||
-           (input_flag==ColumnMajorBigEndian && output_flag==ColumnMajorLittleEndian)
-           ||(input_flag==ColumnMajorLittleEndian &&
-              output_flag==ColumnMajorBigEndian))
+  else if (input_flag.isRowMajor == output_flag.isRowMajor && input_flag.isBigEndian != output_flag.isBigEndian)
   {
     return "same_maj_dif_endian";
   }
-  else if ((input_flag==RowMajorBigEndian && output_flag==ColumnMajorBigEndian)||
-           (input_flag==ColumnMajorBigEndian&&output_flag==RowMajorBigEndian)||
-           (input_flag==RowMajorSmallEndian && output_flag==ColumnMajorLittleEndian)
-           ||(input_flag==ColumnMajorLittleEndian &&
-              output_flag==RowMajorSmallEndian))
+  else if (input_flag.isRowMajor != output_flag.isRowMajor && input_flag.isBigEndian == output_flag.isBigEndian)
   {
     return "dif_maj_same_endian";
   }
@@ -241,7 +230,7 @@ static void flippedEndianCopyCat(size_t curDim, char* inBase,char* outBase,
     for (size_t i=0; i<elmSize;i++){
       outBase[i]=inBase[elmSize-1-i];
     }
-    
+
   }
   else {
     for (size_t i=0; i<overlap_count[curDim];i++){
@@ -312,7 +301,7 @@ int NdCopy(const Buffer &input, const Dims &input_start, const Dims &input_count
                      overlap_start);
     getIoOverlapBase(output_overlap_base,output,output_start,out_stride,
                      overlap_start);
-    
+
     min_cont_dim=getMinContDimn(input_count,output_count,overlap_count);
     block_size=getBlockSize(overlap_count, min_cont_dim, sizeof(T));
     endianCopyCat(0,input_overlap_base,output_overlap_base,in_ovlp_gap_size,

@@ -7,11 +7,9 @@
 using Dims = std::vector<size_t>;
 using Buffer = std::vector<char>;
 
-enum NdCopyFlag{
-    RowMajorBigEndian,
-    RowMajorSmallEndian,
-    ColumnMajorBigEndian,
-    ColumnMajorLittleEndian,
+struct NdCopyFlag {
+    bool isRowMajor;
+    bool isBigEndian;
 };
 
 template<typename T>

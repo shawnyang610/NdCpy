@@ -160,47 +160,31 @@ static void endianCopyCat(size_t cur_dim,char*& input_overlap_base,
   output_overlap_base+=out_ovlp_gap_size[cur_dim];
 }
 
-static std::string copyMode(NdCopyFlag& input_flag, NdCopyFlag& output_flag){
-  if (input_flag.isRowMajor == output_flag.isRowMajor && input_flag.isBigEndian == output_flag.isBigEndian)
-  {
-    return "same_maj_same_endian";
-  }
-  else if (input_flag.isRowMajor == output_flag.isRowMajor && input_flag.isBigEndian != output_flag.isBigEndian)
-  {
-    return "same_maj_dif_endian";
-  }
-  else if (input_flag.isRowMajor != output_flag.isRowMajor && input_flag.isBigEndian == output_flag.isBigEndian)
-  {
-    return "dif_maj_same_endian";
-  }
-  else
-    return "dif_maj_dif_endian";
-}
 static void getRelativeOvlpHeadPos(Dims& ioRelOvlpStart,
                             const Dims& ioStart,
                             Dims& ovlpStart){
   for(size_t i=0;i<ioStart.size();i++)
     ioRelOvlpStart[i]=ovlpStart[i]-ioStart[i];
 }
-static void getFlippedIOStrides(Dims& io_stride,
-                         const Dims& io_count,size_t elmSize){
-  Dims flippedCount(io_count);
-  flippedCount.push_back(elmSize);   //add one extra "byte dimension" to count
-  reverse(flippedCount.begin(), flippedCount.end()); //reverse the order
-  //also add one extra "byte dim" to stride
-  //stride of the byte dim is always 1 byte
-  io_stride.push_back(1);
-  if (io_stride.size()>1) {
-    size_t i=io_stride.size()-2;
-    while (true){
-      io_stride[i]=flippedCount[i+1]*io_stride[i+1];
-      if (i==0) break;
-      else i--;
-    }
-  }
-  //reverse stride to the same order as input for easy access
-  reverse(io_stride.begin(), io_stride.end());
-}
+//static void getFlippedIOStrides(Dims& io_stride,
+//                         const Dims& io_count,size_t elmSize){
+//  Dims flippedCount(io_count);
+//  flippedCount.push_back(elmSize);   //add one extra "byte dimension" to count
+//  reverse(flippedCount.begin(), flippedCount.end()); //reverse the order
+//  //also add one extra "byte dim" to stride
+//  //stride of the byte dim is always 1 byte
+//  io_stride.push_back(1);
+//  if (io_stride.size()>1) {
+//    size_t i=io_stride.size()-2;
+//    while (true){
+//      io_stride[i]=flippedCount[i+1]*io_stride[i+1];
+//      if (i==0) break;
+//      else i--;
+//    }
+//  }
+//  //reverse stride to the same order as input for easy access
+//  reverse(io_stride.begin(), io_stride.end());
+//}
 static void flippedCopyCat(size_t curDim, char* inBase,char* outBase,
                     Dims& InRelOvlpHeadPos,
                     Dims& outRelOvlpHeadPos,Dims& in_stride,
@@ -242,6 +226,15 @@ static void flippedEndianCopyCat(size_t curDim, char* inBase,char* outBase,
     }
   }
 }
+class CopyMode{
+public:
+  bool isSameMajor, isSameEndian;
+  CopyMode(NdCopyFlag& in, NdCopyFlag& out){
+    isSameMajor=in.isRowMajor==out.isRowMajor?true:false;
+    isSameEndian=in.isBigEndian==out.isBigEndian?true:false;
+  }
+};
+
 /*end of helper functions*/
 
 
@@ -264,7 +257,8 @@ int NdCopy(const Buffer &input, const Dims &input_start, const Dims &input_count
   size_t min_cont_dim, block_size;
   char* input_overlap_base=nullptr;
   char* output_overlap_base=nullptr;
-  if (copyMode(input_flag,output_flag)=="same_maj_same_endian"){
+  CopyMode copyMode(input_flag, output_flag);
+  if (copyMode.isSameMajor){
     getInputEnd(input_end,input_start,input_count);
     getOutputEnd(output_end,output_start,output_count);
     getOverlapStart(overlap_start,input_start, output_start);
@@ -282,35 +276,17 @@ int NdCopy(const Buffer &input, const Dims &input_start, const Dims &input_count
 
     min_cont_dim=getMinContDimn(input_count,output_count,overlap_count);
     block_size=getBlockSize(overlap_count, min_cont_dim, sizeof(T));
-    copyCat(0,input_overlap_base,output_overlap_base,in_ovlp_gap_size,
-            out_ovlp_gap_size,overlap_count,min_cont_dim,block_size);
+    if(copyMode.isSameEndian){
+      copyCat(0,input_overlap_base,output_overlap_base,in_ovlp_gap_size,
+              out_ovlp_gap_size,overlap_count,min_cont_dim,block_size);
+    }
+    else{//same major, dif. endian mode
+      endianCopyCat(0,input_overlap_base,output_overlap_base,in_ovlp_gap_size,
+                    out_ovlp_gap_size,overlap_count,min_cont_dim,block_size,sizeof(T),
+                    block_size/sizeof(T));
+    }
   }
-  else if (copyMode(input_flag,output_flag)=="same_maj_dif_endian"){
-    std::cout<<"NDCopy copyMode selection:same_maj_dif_endian "<<std::endl;
-    getInputEnd(input_end,input_start,input_count);
-    getOutputEnd(output_end,output_start,output_count);
-    getOverlapStart(overlap_start,input_start, output_start);
-    getOverlapEnd(overlap_end, input_end, output_end);
-    getOverlapCount(overlap_count,overlap_start, overlap_end);
-    if (!hasOverlap(overlap_start, overlap_end)) return 1;//no overlap found
-    getIOStrides(in_stride,input_count,sizeof(T));
-    getIOStrides(out_stride, output_count,sizeof(T));
-    getIoOvlpGapSize(in_ovlp_gap_size,in_stride,input_count, overlap_count);
-    getIoOvlpGapSize(out_ovlp_gap_size,out_stride,output_count, overlap_count);
-    getIoOverlapBase(input_overlap_base,input,input_start,in_stride,
-                     overlap_start);
-    getIoOverlapBase(output_overlap_base,output,output_start,out_stride,
-                     overlap_start);
-
-    min_cont_dim=getMinContDimn(input_count,output_count,overlap_count);
-    block_size=getBlockSize(overlap_count, min_cont_dim, sizeof(T));
-    endianCopyCat(0,input_overlap_base,output_overlap_base,in_ovlp_gap_size,
-            out_ovlp_gap_size,overlap_count,min_cont_dim,block_size,sizeof(T),
-                  block_size/sizeof(T));
-  }
-  else if (copyMode(input_flag,output_flag)=="dif_maj_same_endian"){
-    std::cout<<"NDCopy copyMode selection:dif_maj_same_endian "<<std::endl;
-
+  else {
     //avg computational overhead is O(1) for each intersecting byte
     //worst case can be O(n) where n is number of dimensions
     Dims output_start_rev(output_start);
@@ -330,32 +306,16 @@ int NdCopy(const Buffer &input, const Dims &input_start, const Dims &input_count
     getRelativeOvlpHeadPos(outRelOvlpHeadPos, output_start_rev,overlap_start);
     input_overlap_base=(char*)input.data();
     output_overlap_base=output.data();
-    flippedCopyCat(0,input_overlap_base,output_overlap_base,InRelOvlpHeadPos,
-                   outRelOvlpHeadPos,in_stride,out_stride,overlap_count,sizeof(T));
-  }
-
-  //diff_maj_dif_endian
-  else {
-    std::cout<<"NDCopy copyMode selection:dif_maj_dif_endian "<<std::endl;
-    Dims output_start_rev(output_start);
-    Dims output_count_rev(output_count);
-    std::reverse(output_start_rev.begin(), output_start_rev.end());
-    std::reverse(output_count_rev.begin(), output_count_rev.end());
-    getInputEnd(input_end,input_start,input_count);
-    getOutputEnd(output_end,output_start_rev,output_count_rev);
-    getOverlapStart(overlap_start,input_start, output_start_rev);
-    getOverlapEnd(overlap_end, input_end, output_end);
-    getOverlapCount(overlap_count,overlap_start, overlap_end);
-    if (!hasOverlap(overlap_start, overlap_end)) return 1;//no overlap found
-    getIOStrides(in_stride,input_count,sizeof(T));
-    getIOStrides(out_stride, output_count, sizeof(T));
-    std::reverse(out_stride.begin(), out_stride.end());
-    getRelativeOvlpHeadPos(InRelOvlpHeadPos,input_start,overlap_start);
-    getRelativeOvlpHeadPos(outRelOvlpHeadPos, output_start_rev,overlap_start);
-    input_overlap_base=(char*)input.data();
-    output_overlap_base=output.data();
-    flippedEndianCopyCat(0,input_overlap_base,output_overlap_base,InRelOvlpHeadPos,
-                   outRelOvlpHeadPos,in_stride,out_stride,overlap_count,sizeof(T));
+    if (copyMode.isSameEndian){
+      std::cout<<"Copy Mode: Different Major, Same Endian"<<std::endl;
+      flippedCopyCat(0,input_overlap_base,output_overlap_base,InRelOvlpHeadPos,
+                     outRelOvlpHeadPos,in_stride,out_stride,overlap_count,sizeof(T));
+    }
+    else{ //dif major, dif. endian mode
+      std::cout<<"Copy Mode: Different Major, Different Endian"<<std::endl;
+      flippedEndianCopyCat(0,input_overlap_base,output_overlap_base,InRelOvlpHeadPos,
+                           outRelOvlpHeadPos,in_stride,out_stride,overlap_count,sizeof(T));
+    }
   }
   return 0;
 }

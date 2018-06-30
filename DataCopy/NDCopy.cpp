@@ -144,7 +144,7 @@ static void endianCopyCat(size_t cur_dim,char*& input_overlap_base,
     //to be copied in reverse order
     for(size_t i=0;i<numElmPerBlock;i++){
       for(size_t j=0; j<elmSize;j++){
-        output_overlap_base[0]=input_overlap_base[elmSize-1-j];
+        output_overlap_base[0+j]=input_overlap_base[elmSize-1-j];
       }
       input_overlap_base+=elmSize;
       output_overlap_base+=elmSize;
@@ -153,9 +153,9 @@ static void endianCopyCat(size_t cur_dim,char*& input_overlap_base,
 
   if (cur_dim<min_cont_dim)
     for (size_t i=0; i<overlap_count[cur_dim];i++)
-      copyCat(cur_dim+1, input_overlap_base, output_overlap_base,
-              in_ovlp_gap_size,out_ovlp_gap_size,overlap_count,
-              min_cont_dim,block_size);
+      endianCopyCat(cur_dim+1,input_overlap_base,output_overlap_base,in_ovlp_gap_size,
+                    out_ovlp_gap_size,overlap_count,min_cont_dim,block_size,elmSize,
+                    numElmPerBlock);
   input_overlap_base+=in_ovlp_gap_size[cur_dim];
   output_overlap_base+=out_ovlp_gap_size[cur_dim];
 }
@@ -203,6 +203,7 @@ static void flippedCopyCat(size_t curDim, char* inBase,char* outBase,
     }
   }
 }
+
 static void flippedEndianCopyCat(size_t curDim, char* inBase,char* outBase,
                            Dims& InRelOvlpHeadPos,
                            Dims& outRelOvlpHeadPos,Dims& in_stride,
@@ -212,13 +213,13 @@ static void flippedEndianCopyCat(size_t curDim, char* inBase,char* outBase,
     //the following for-loop block is the only difference from the original
     //flippedCopyCat
     for (size_t i=0; i<elmSize;i++){
+      //memcpy(outBase+i, inBase+elmSize-1-i, 1);
       outBase[i]=inBase[elmSize-1-i];
     }
-
   }
   else {
     for (size_t i=0; i<overlap_count[curDim];i++){
-      flippedCopyCat(curDim+1,
+      flippedEndianCopyCat(curDim+1,
                      inBase+(InRelOvlpHeadPos[curDim]+i)*in_stride[curDim],
                      outBase+(outRelOvlpHeadPos[curDim]+i)*out_stride[curDim],
                      InRelOvlpHeadPos,outRelOvlpHeadPos, in_stride,out_stride,
@@ -277,10 +278,12 @@ int NdCopy(const Buffer &input, const Dims &input_start, const Dims &input_count
     min_cont_dim=getMinContDimn(input_count,output_count,overlap_count);
     block_size=getBlockSize(overlap_count, min_cont_dim, sizeof(T));
     if(copyMode.isSameEndian){
+      std::cout<<"Quick Copying Mode:Same Major, Same Endian"<<std::endl;
       copyCat(0,input_overlap_base,output_overlap_base,in_ovlp_gap_size,
               out_ovlp_gap_size,overlap_count,min_cont_dim,block_size);
     }
     else{//same major, dif. endian mode
+      std::cout<<"Copying Mode:Same Major, Dif. Endian"<<std::endl;
       endianCopyCat(0,input_overlap_base,output_overlap_base,in_ovlp_gap_size,
                     out_ovlp_gap_size,overlap_count,min_cont_dim,block_size,sizeof(T),
                     block_size/sizeof(T));

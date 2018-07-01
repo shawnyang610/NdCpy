@@ -206,6 +206,7 @@ void RunTestEndianMode(const Dims &input_start, const Dims &input_count, const D
   PrintData<T>(output_buffer, output_count);
 }
 
+
 int main(int argc, const char * argv[]) {
 
     int iters = 10;
@@ -213,8 +214,8 @@ int main(int argc, const char * argv[]) {
     if(argc > 1){
         iters = atoi(argv[1]);
     }
-//    memory addr. calc. performance test:
-//    both algorithm, only 1 element is copied at a time
+//    //memory addr. calc. performance test:
+//    //both algorithm, only 1 element is copied at a time
 //        Dims input_start = {1,1,1,1,1,1,1,1,1};
 //        Dims input_count = {5,5,5,5,5,5,5,5,1};
 //        Dims output_start = {1,1,1,1,1,1,1,1,1};
@@ -222,11 +223,11 @@ int main(int argc, const char * argv[]) {
 //        RunTest<int>(input_start, input_count, output_start, output_count, iters);
 
     //largest-continous-block-method performance test
-//        Dims input_start = {1,1,1,1,1,1,1,1,1};
-//        Dims input_count = {5,1,5,5,5,5,5,5,1};
-//        Dims output_start = {1,1,1,1,1,1,1,1,1};
-//        Dims output_count = {5,5,5,5,5,5,5,5,5};
-//        RunTest<int>(input_start, input_count, output_start, output_count, iters);
+        Dims input_start = {1,1,1,1,1,1,1,1,1};
+        Dims input_count = {5,1,5,5,5,5,5,5,5};
+        Dims output_start = {1,1,1,1,1,1,1,1,1};
+        Dims output_count = {5,5,5,5,5,5,5,5,5};
+        RunTest<int>(input_start, input_count, output_start, output_count, iters);
 
 //    // diff-maj-same-endian demo
 //    Dims input_start = {5,10};
@@ -235,25 +236,33 @@ int main(int argc, const char * argv[]) {
 //    Dims output_count = {20,10};
 //    RunTestDiffMajorMode<int>(input_start, input_count, output_start, output_count);
 
-    //todo performance test: diff-maj-same-endian vs same-maj-same-endian:
+    //performance test: diff-maj-same-endian vs same-maj-same-endian:
     //copy 1 element at a time. anticipation: same-maj algm should be slightly faster
     //due to the way mem address is calculated in diff-maj where 2 additional multiplications
     //are used for each element copied, but in both case, avg overhead is still O(1)
+//  Dims input_start = {1,1,1,1,1,1,1,1,1};
+//  Dims input_count = {5,1,5,5,5,5,5,5,5};
+//  Dims output_start = {1,1,1,1,1,1,1,1,1};
+//  Dims output_count = {5,5,5,5,5,5,5,5,5};
+//  //need to comment out data verification part of RunTest before runnning.
+//  RunTest<int>(input_start, input_count,output_start, output_count, iters);
+  
+//  //endian mode demo
+//  //unsigned DEC 4278255360 == BIN 11111111 00000000 11111111 00000000
+//  //unsigned DEC 16711935   == BIN 00000000 11111111 00000000 11111111
+//  Dims input_start = {2,4};
+//  Dims input_count = {3,3};
+//  Dims output_start = {0,0};
+//  Dims output_count = {10,10};
+//  NdCopyFlag input_flag, output_flag;
+//  input_flag.isRowMajor = true;
+//  input_flag.isBigEndian = true;
+//  output_flag.isRowMajor = true;
+//  output_flag.isBigEndian = false;
+//  RunTestEndianMode<unsigned>(input_start, input_count, output_start,
+//                            output_count, input_flag, output_flag);
 
-//endian mode demo
-//unsigned DEC 4278255360 == BIN 11111111 00000000 11111111 00000000
-//unsigned DEC 16711935   == BIN 00000000 11111111 00000000 11111111
-  Dims input_start = {2,4};
-  Dims input_count = {3,3};
-  Dims output_start = {0,0};
-  Dims output_count = {10,10};
-  NdCopyFlag input_flag, output_flag;
-  input_flag.isRowMajor = true;
-  input_flag.isBigEndian = true;
-  output_flag.isRowMajor = true;
-  output_flag.isBigEndian = false;
-  RunTestEndianMode<unsigned>(input_start, input_count, output_start,
-                            output_count, input_flag, output_flag);
-
+  
+  
     return 0;
 }

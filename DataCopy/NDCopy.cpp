@@ -149,6 +149,35 @@ static void copyCat(size_t curDim,
   inOvlpBase+=inOvlpGapSize[curDim];
   outOvlpBase+=outOvlpGapSize[curDim];
 }
+static void iterativeCopyCat (
+                       char*& inOvlpBase,
+                       char*& outOvlpBase,
+                       Dims& inOvlpGapSize,
+                       Dims& outOvlpGapSize,
+                       Dims& ovlpCount,
+                       size_t minContDim,
+                       size_t blockSize)
+{
+  Dims pos(ovlpCount.size(),0);
+  size_t curDim=0;
+  while (true){
+    while(curDim!=minContDim){
+      pos[curDim]++;
+      curDim++;
+    }
+    std::memcpy(outOvlpBase, inOvlpBase, blockSize);
+    inOvlpBase+=blockSize;
+    outOvlpBase+=blockSize;
+    do {
+      if (curDim==0) //more logical but expensive place for the check
+        return;
+      inOvlpBase+=inOvlpGapSize[curDim];
+      outOvlpBase+=outOvlpGapSize[curDim];
+      pos[curDim]=0;
+      curDim--;
+    } while (pos[curDim]==ovlpCount[curDim]);
+  }
+}
 static void endianCopyCat(size_t curDim,
                           char*& inOvlpBase,
                           char*& outOvlpBase,
@@ -183,6 +212,42 @@ static void endianCopyCat(size_t curDim,
   outOvlpBase+=outOvlpGapSize[curDim];
 }
 
+static void iterativeEndianCopyCat (
+                              char*& inOvlpBase,
+                              char*& outOvlpBase,
+                              Dims& inOvlpGapSize,
+                              Dims& outOvlpGapSize,
+                              Dims& ovlpCount,
+                              size_t minContDim,
+                              size_t blockSize,
+                              size_t elmSize,
+                              size_t numElmsPerBlock)
+{
+  Dims pos(ovlpCount.size(),0);
+  size_t curDim=0;
+  while (true){
+    while(curDim!=minContDim){
+      pos[curDim]++;
+      curDim++;
+    }
+    for(size_t i=0;i<numElmsPerBlock;i++){
+      for(size_t j=0; j<elmSize;j++){
+        outOvlpBase[j]=inOvlpBase[elmSize-1-j];
+      }
+      inOvlpBase+=elmSize;
+      outOvlpBase+=elmSize;
+    }
+    do {
+      if (curDim==0) //more logical but expensive place for the check
+        return;
+      inOvlpBase+=inOvlpGapSize[curDim];
+      outOvlpBase+=outOvlpGapSize[curDim];
+      pos[curDim]=0;
+      curDim--;
+    } while (pos[curDim]==ovlpCount[curDim]);
+  }
+}
+
 static void getRltvOvlpStartPos(Dims& ioRltvOvlpStart,
                             const Dims& ioStart,
                             Dims& ovlpStart)
@@ -215,6 +280,41 @@ static void flippedCopyCat(size_t curDim,
                      elmSize);
   }
 }
+//performance is 50% slower than the recursive version
+static void iterativeFlippedCopyCat(
+                           char* inBase,
+                           char* outBase,
+                           Dims& inRltvOvlpSPos,
+                           Dims& outRltvOvlpSPos,
+                           Dims& inStride,
+                           Dims& outStride,
+                           Dims& ovlpCount,
+                           size_t elmSize)
+{
+  size_t curDim=0;
+  Dims pos(ovlpCount.size()+1,0);
+  std::vector<char*>inAddr(ovlpCount.size()+1);
+  inAddr[0]=inBase;
+  std::vector<char*>outAddr(ovlpCount.size()+1);
+  outAddr[0]=outBase;
+  while (true){
+    while (curDim!=inStride.size()){
+      inAddr[curDim+1]=
+      inAddr[curDim]+(inRltvOvlpSPos[curDim]+pos[curDim])*inStride[curDim];
+      outAddr[curDim+1]=
+      outAddr[curDim]+(outRltvOvlpSPos[curDim]+pos[curDim])*outStride[curDim];
+      pos[curDim]++;
+      curDim++;
+    }
+      std::memcpy(outAddr[curDim], inAddr[curDim], elmSize);
+    do {
+      if (curDim==0)
+        return;
+      pos[curDim]=0;
+      curDim--;
+    }while(pos[curDim]==ovlpCount[curDim]);
+  }
+}
 
 static void flippedEndianCopyCat(size_t curDim,
                                  char* inBase,
@@ -245,6 +345,44 @@ static void flippedEndianCopyCat(size_t curDim,
                            outStride,
                            ovlpCount,
                            elmSize);
+  }
+}
+//performance is 50% slower than the recursive version
+static void iterativeFlippedEndianCopyCat(
+                                    char* inBase,
+                                    char* outBase,
+                                    Dims& inRltvOvlpSPos,
+                                    Dims& outRltvOvlpSPos,
+                                    Dims& inStride,
+                                    Dims& outStride,
+                                    Dims& ovlpCount,
+                                    size_t elmSize)
+{
+  size_t curDim=0;
+  Dims pos(ovlpCount.size()+1,0);
+  std::vector<char*>inAddr(ovlpCount.size()+1);
+  inAddr[0]=inBase;
+  std::vector<char*>outAddr(ovlpCount.size()+1);
+  outAddr[0]=outBase;
+  while (true){
+    while (curDim!=inStride.size()){
+      inAddr[curDim+1]=
+      inAddr[curDim]+(inRltvOvlpSPos[curDim]+pos[curDim])*inStride[curDim];
+      outAddr[curDim+1]=
+      outAddr[curDim]+(outRltvOvlpSPos[curDim]+pos[curDim])*outStride[curDim];
+      pos[curDim]++;
+      curDim++;
+    }
+    for (size_t i=0; i<elmSize;i++){
+      //memcpy(outBase+i, inBase+elmSize-1-i, 1);
+      outAddr[curDim][i]=inAddr[curDim][elmSize-1-i];
+    }
+    do {
+      if (curDim==0)
+        return;
+      pos[curDim]=0;
+      curDim--;
+    }while(pos[curDim]==ovlpCount[curDim]);
   }
 }
 class CopyMode{
@@ -301,28 +439,46 @@ int NdCopy(const Buffer& in,
     minContDim=getMinContDim(inCount,outCount,ovlpCount);
     blockSize=getBlockSize(ovlpCount, minContDim, sizeof(T));
     if(copyMode.isSameEndian){
-      std::cout<<"Quick Copying Mode:Same Major, Same Endian"<<std::endl;
-      copyCat(0,
-              inOvlpBase,
-              outOvlpBase,
-              inOvlpGapSize,
-              outOvlpGapSize,
-              ovlpCount,
-              minContDim,
-              blockSize);
+//      std::cout<<"Quick Copying Mode:Same Major, Same Endian"<<std::endl;
+//      copyCat(0,
+//              inOvlpBase,
+//              outOvlpBase,
+//              inOvlpGapSize,
+//              outOvlpGapSize,
+//              ovlpCount,
+//              minContDim,
+//              blockSize);
+      
+      iterativeCopyCat (inOvlpBase,
+                        outOvlpBase,
+                        inOvlpGapSize,
+                        outOvlpGapSize,
+                        ovlpCount,
+                        minContDim,
+                        blockSize);
     }
     else{//same major, dif. endian mode
-      std::cout<<"Copying Mode:Same Major, Dif. Endian"<<std::endl;
-      endianCopyCat(0,
-                    inOvlpBase,
-                    outOvlpBase,
-                    inOvlpGapSize,
-                    outOvlpGapSize,
-                    ovlpCount,
-                    minContDim,
-                    blockSize,
-                    sizeof(T),
-                    blockSize/sizeof(T));
+//      std::cout<<"Copying Mode:Same Major, Dif. Endian"<<std::endl;
+//      endianCopyCat(0,
+//                    inOvlpBase,
+//                    outOvlpBase,
+//                    inOvlpGapSize,
+//                    outOvlpGapSize,
+//                    ovlpCount,
+//                    minContDim,
+//                    blockSize,
+//                    sizeof(T),
+//                    blockSize/sizeof(T));
+      iterativeEndianCopyCat (
+                              inOvlpBase,
+                              outOvlpBase,
+                              inOvlpGapSize,
+                              outOvlpGapSize,
+                              ovlpCount,
+                              minContDim,
+                              blockSize,
+                              sizeof(T),
+                              blockSize/sizeof(T));
     }
   }
   else {
@@ -346,8 +502,18 @@ int NdCopy(const Buffer& in,
     inOvlpBase=(char*)in.data();
     outOvlpBase=(char*)out.data();
     if (copyMode.isSameEndian){
-      std::cout<<"Copy Mode: Different Major, Same Endian"<<std::endl;
-      flippedCopyCat(0,
+//      std::cout<<"Copy Mode: Different Major, Same Endian"<<std::endl;
+//      flippedCopyCat(0,
+//                     inOvlpBase,
+//                     outOvlpBase,
+//                     inRltvOvlpStartPos,
+//                     outRltvOvlpStartPos,
+//                     inStride,
+//                     outStride,
+//                     ovlpCount,
+//                     sizeof(T));
+      
+      iterativeFlippedCopyCat(
                      inOvlpBase,
                      outOvlpBase,
                      inRltvOvlpStartPos,
@@ -358,19 +524,32 @@ int NdCopy(const Buffer& in,
                      sizeof(T));
     }
     else{ //dif major, dif. endian mode
-      std::cout<<"Copy Mode: Different Major, Different Endian"<<std::endl;
-      flippedEndianCopyCat(0,
-                           inOvlpBase,
-                           outOvlpBase,
-                           inRltvOvlpStartPos,
-                           outRltvOvlpStartPos,
-                           inStride,
-                           outStride,
-                           ovlpCount,
-                           sizeof(T));
+//      std::cout<<"Copy Mode: Different Major, Different Endian"<<std::endl;
+//      flippedEndianCopyCat(0,
+//                           inOvlpBase,
+//                           outOvlpBase,
+//                           inRltvOvlpStartPos,
+//                           outRltvOvlpStartPos,
+//                           inStride,
+//                           outStride,
+//                           ovlpCount,
+//                           sizeof(T));
+      iterativeFlippedEndianCopyCat(
+                              inOvlpBase,
+                              outOvlpBase,
+                              inRltvOvlpStartPos,
+                              outRltvOvlpStartPos,
+                              inStride,
+                              outStride,
+                              ovlpCount,
+                              sizeof(T));
+      
     }
   }
   return 0;
 }
 /*end of calling function*/
+
+
+
 

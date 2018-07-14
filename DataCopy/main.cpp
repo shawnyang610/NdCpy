@@ -55,12 +55,16 @@ void RunTest(const Dims &input_start, const Dims &input_count, const Dims &outpu
     MakeData<int>(input_buffer, input_count, false);
 
     // performance testing begin
-
-    NdCopyFlag input_flag, output_flag;
-    input_flag.isRowMajor = true;
-    input_flag.isBigEndian = true;
-    output_flag.isRowMajor = true;
-    output_flag.isBigEndian = true;
+  NdCopyFlag input_flag, output_flag;
+  input_flag.isRowMajor = true;
+  input_flag.isBigEndian = true;
+  output_flag.isRowMajor = true;
+  output_flag.isBigEndian = true;
+  bool inIsRowMaj=true;
+  bool inIsBigEndian=true;
+  bool outIsRowMaj=true;
+  bool outIsBigEndian=true;
+  bool safeMode=true;
 
     auto start = std::chrono::system_clock::now();
     for(int i=0; i<iters; ++i){
@@ -68,11 +72,14 @@ void RunTest(const Dims &input_start, const Dims &input_count, const Dims &outpu
                     input_buffer,
                     input_start,
                     input_count,
-                    input_flag,
+                       inIsRowMaj,
+                       inIsBigEndian,
                     output_buffer,
                     output_start,
                     output_count,
-                    output_flag
+                       outIsRowMaj,
+                       outIsBigEndian,
+                       safeMode
                     ))
         {
             std::cout<<"no overlap found"<<std::endl;
@@ -83,16 +90,32 @@ void RunTest(const Dims &input_start, const Dims &input_count, const Dims &outpu
 
     auto start2 = std::chrono::system_clock::now();
     for(int i=0; i<iters; ++i){
-        NdCopy2<int>(
-                input_buffer,
-                input_start,
-                input_count,
-                input_flag,
-                output_buffer2,
-                output_start,
-                output_count,
-                output_flag
-                );
+//        NdCopy2<int>(
+//                input_buffer,
+//                input_start,
+//                input_count,
+//                input_flag,
+//                output_buffer2,
+//                output_start,
+//                output_count,
+//                output_flag
+//                );
+      if(NdCopy<int>(
+                     input_buffer,
+                     input_start,
+                     input_count,
+                     inIsRowMaj,
+                     inIsBigEndian,
+                     output_buffer2,
+                     output_start,
+                     output_count,
+                     outIsRowMaj,
+                     outIsBigEndian,
+                     safeMode
+                     ))
+      {
+        std::cout<<"no overlap found"<<std::endl;
+      }
     }
     auto end2 = std::chrono::system_clock::now();
     auto duration2 = std::chrono::duration_cast<std::chrono::microseconds>(end2 - start2);
@@ -120,8 +143,10 @@ void RunTest(const Dims &input_start, const Dims &input_count, const Dims &outpu
     //    std::cout << "*************** output_buffer2 ****************" << std::endl;
     //    PrintData<int>(output_buffer2, output_count);
 
-    std::cout << "Algorithm 1 spent: " << duration.count() << std::endl;
-    std::cout << "Algorithm 2 spent: " << duration2.count() << std::endl;
+  std::cout << "Algorithm 1 spent: Total: " << duration.count()<<";  seconds per iter: "
+  <<duration.count()*1e-6/iters <<std::endl;
+  std::cout << "Algorithm 2 spent: Total: " << duration2.count()<<";  seconds per iter: "
+  <<duration2.count()*1e-6/iters<< std::endl;
     if(duration2.count() > duration.count()){
         std::cout << "Algorithm 1 is faster than Algorithm 2 by " << ((float)duration2.count() - (float)duration.count()) / (float)duration.count() * 100.0 << "%" << std::endl;
     }
@@ -133,35 +158,48 @@ void RunTest(const Dims &input_start, const Dims &input_count, const Dims &outpu
 
 
 template<class T>
-void RunTestDiffMajorMode(const Dims &input_start, const Dims &input_count, const Dims &output_start,
-        const Dims &output_count)
+void RunTestDiffMajorMode( Dims &input_start, Dims &input_count, Dims &output_start,
+        Dims &output_count, bool inIsRowMaj, bool outIsRowMaj, bool safeMode)
 {
     Buffer input_buffer, output_buffer, output_buffer2;
+  if (!inIsRowMaj) std::reverse(input_count.begin(), input_count.end());
+  if (!outIsRowMaj) std::reverse(output_count.begin(),output_count.end());
 
     input_buffer.resize(std::accumulate(input_count.begin(), input_count.end(), sizeof(T), std::multiplies<size_t>()));
     output_buffer.resize(std::accumulate(output_count.begin(), output_count.end(), sizeof(T), std::multiplies<size_t>()));
     output_buffer2.resize(std::accumulate(output_count.begin(), output_count.end(), sizeof(T), std::multiplies<size_t>()));
 
-    NdCopyFlag input_flag, output_flag;
-    input_flag.isRowMajor = true;
-    input_flag.isBigEndian = true;
-    output_flag.isRowMajor = false;
-    output_flag.isBigEndian = true;
+
+  bool inIsBigEndian=true;
+  bool outIsBigEndian=true;
+
 
     MakeData<int>(input_buffer, input_count, false);
-    if(NdCopy<int>(
-                input_buffer,
-                input_start,
-                input_count,
-                input_flag,
-                output_buffer,
-                output_start,
-                output_count,
-                output_flag
-                ))
+  if (!inIsRowMaj) std::reverse(input_count.begin(), input_count.end());
+  if (!outIsRowMaj) std::reverse(output_count.begin(),output_count.end());
+  auto start = std::chrono::system_clock::now();
+  if(NdCopy<int>(
+                 input_buffer,
+                 input_start,
+                 input_count,
+                 inIsRowMaj,
+                 inIsBigEndian,
+                 output_buffer,
+                 output_start,
+                 output_count,
+                 outIsRowMaj,
+                 outIsBigEndian,
+                 safeMode
+                 ))
     {
         std::cout<<"no overlap found"<<std::endl;
     }
+  auto end = std::chrono::system_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end-start);
+  
+  if (!inIsRowMaj) std::reverse(input_count.begin(), input_count.end());
+  if (!outIsRowMaj) std::reverse(output_count.begin(),output_count.end());
+    std::cout<<"time spent: "<<duration.count()<<" usec"<<std::endl;
     std::cout << "*************** input_buffer ****************" << std::endl;
     PrintData<int>(input_buffer, input_count);
     std::cout << "*************** output_buffer ****************" << std::endl;
@@ -208,35 +246,48 @@ void RunTestEndianMode(const Dims &input_start, const Dims &input_count, const D
 
 
 int main(int argc, const char * argv[]) {
-
-    int iters = 10;
-
+    int iters = 1;
     if(argc > 1){
         iters = atoi(argv[1]);
     }
-    //memory addr. calc. performance test:
-    //both algorithm, only 1 element is copied at a time
-        Dims input_start = {1,1,1,1,1,1,1,1,1};
-        Dims input_count = {5,5,5,5,5,5,5,5,1};
-        Dims output_start = {1,1,1,1,1,1,1,1,1};
-        Dims output_count = {5,5,5,5,5,5,5,5,5};
-        RunTest<int>(input_start, input_count, output_start, output_count, iters);
-
-//    //largest-continous-block-method performance test
-//        Dims input_start = {1,1,1,1,1,1,1,1,1};
-//        Dims input_count = {5,1,5,5,5,5,5,5,5};
-//        Dims output_start = {1,1,1,1,1,1,1,1,1};
-//        Dims output_count = {5,5,5,5,5,5,5,5,5};
+  
+//    //memory addr. calc. performance test:
+//    //both algorithm, only 1 element is copied at a time
+//        Dims input_start = {1,1,1,1,1,1,1,1,1,1};
+//        Dims input_count = {5,5,5,5,5,5,5,5,1,5};
+//        Dims output_start = {1,1,1,1,1,1,1,1,1,1};
+//        Dims output_count = {5,5,5,5,5,5,5,5,5,5};
 //        RunTest<int>(input_start, input_count, output_start, output_count, iters);
 
-    // diff-maj-same-endian demo
+//    //largest-continous-block-method performance test
+//        Dims input_start = {1,1,1,1,1,1,1,1,1,1};
+//        Dims input_count = {5,1,5,5,5,5,5,5,5,5};
+//        Dims output_start = {1,1,1,1,1,1,1,1,1,1};
+//        Dims output_count = {5,5,5,5,5,5,5,5,5,5};
+//        RunTest<int>(input_start, input_count, output_start, output_count, iters);
+
+  //    input:row major, output:col major, same-endian demo
 //    Dims input_start = {5,10};
 //    Dims input_count = {5,10};
 //    Dims output_start = {10,5};
 //    Dims output_count = {20,10};
-////    RunTestDiffMajorMode<int>(input_start, input_count, output_start, output_count);
-//    RunTest<int>(input_start, input_count, output_start, output_count, iters);
+//    RunTestDiffMajorMode<int>(input_start, input_count, output_start, output_count);
+////    RunTest<int>(input_start, input_count, output_start, output_count, iters);
 
+  
+  //DEMO input of any major to output of any major,with same endianess
+  bool inIsRowMaj=true;
+  Dims input_start = {3,0}; //in its own format
+  Dims input_count = {5,4}; //in its own format
+  bool outIsRowMaj=false;
+  Dims output_start = {0,0}; //in its own format
+  Dims output_count = {10,5}; //in its own format
+  bool safeMode=false;
+  RunTestDiffMajorMode<int>(input_start, input_count,
+                            output_start, output_count,
+                            inIsRowMaj,outIsRowMaj,safeMode);
+  
+  //    RunTest<int>(input_start, input_count, output_start, output_count, iters);
     //performance test: diff-maj-same-endian vs same-maj-same-endian:
     //copy 1 element at a time. anticipation: same-maj algm should be slightly faster
     //due to the way mem address is calculated in diff-maj where 2 additional multiplications

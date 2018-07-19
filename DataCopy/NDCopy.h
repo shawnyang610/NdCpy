@@ -12,26 +12,13 @@ struct NdCopyFlag {
     bool isBigEndian;
 };
 
-template <class T>
-int NdCopy(const Buffer &in,
+template <typename T>
+int NdCopy(char* in,
            const Dims &inStart,
            const Dims &inCount,
            bool inIsRowMajor,
            bool inIsBigEndian,
-           Buffer &out,
-           const Dims &outStart,
-           const Dims &outCount,
-           bool outIsRowMajor,
-           bool outIsBigEndian,
-           bool safeMode=false
-           );
-template <class T>
-int NdCopyT(const Buffer &in,
-           const Dims &inStart,
-           const Dims &inCount,
-           bool inIsRowMajor,
-           bool inIsBigEndian,
-           Buffer &out,
+           char* out,
            const Dims &outStart,
            const Dims &outCount,
            bool outIsRowMajor,

@@ -25,6 +25,19 @@ int NdCopy(const Buffer &in,
            bool outIsBigEndian,
            bool safeMode=false
            );
+template <class T>
+int NdCopyT(const Buffer &in,
+           const Dims &inStart,
+           const Dims &inCount,
+           bool inIsRowMajor,
+           bool inIsBigEndian,
+           Buffer &out,
+           const Dims &outStart,
+           const Dims &outCount,
+           bool outIsRowMajor,
+           bool outIsBigEndian,
+           bool safeMode=false
+           );
 
 template<typename T>
 int NdCopy2(

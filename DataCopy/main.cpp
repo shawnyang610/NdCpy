@@ -178,13 +178,13 @@ void RunTestDiffMajorMode( Dims &input_start, Dims &input_count, Dims &output_st
   if (!inIsRowMaj) std::reverse(input_count.begin(), input_count.end());
   if (!outIsRowMaj) std::reverse(output_count.begin(),output_count.end());
   auto start = std::chrono::system_clock::now();
-  if(NdCopy<int>(
-                 input_buffer,
+  if(NdCopyT<int>(
+                 input_buffer.data(),
                  input_start,
                  input_count,
                  inIsRowMaj,
                  inIsBigEndian,
-                 output_buffer,
+                 reinterpret_cast<char*>(output_buffer.data()),
                  output_start,
                  output_count,
                  outIsRowMaj,
@@ -279,8 +279,8 @@ int main(int argc, const char * argv[]) {
   bool inIsRowMaj=true;
   Dims input_start = {3,0}; //in its own format
   Dims input_count = {5,4}; //in its own format
-  bool outIsRowMaj=false;
-  Dims output_start = {0,0}; //in its own format
+  bool outIsRowMaj=true;
+  Dims output_start = {3,0}; //in its own format
   Dims output_count = {10,5}; //in its own format
   bool safeMode=false;
   RunTestDiffMajorMode<int>(input_start, input_count,

@@ -15,6 +15,12 @@
  * For copying involving column major, or different endianess only the
  * second optimization is applied.
  
- ## Use case
+## Use case
  * Used as the new "dataman" core function for data copying to replace the old one used
  * in ornladios/ADIOS2, a library runs on super computers for data I/O
+
+## Work in progress
+ * All functional features are in production.
+ * Convert the library to a professional, maintenable structure. (Work in progress)
+ * Adding tests for all functionalities. (Work in progress)
+ * Create a website for demo and algorithm analysis for possible further improvements. (Work in progress)

@@ -1,9 +1,8 @@
-# n-dimension-data-copy
+# ndcopy - a fast I/O utility library that copies specified n-dimensional data array from src buffer to dest buffer.
 
-## Description
- * Developed as a new optimized data copying core to replace the existing one used
- * in ornladios/ADIOS2 which runs on super computers for data I/O
+
 ## Features
+ * Highly optimized specificly for high dimensional, contiguous data copying.
  * Copies n-dimensional Data from a source buffer to destination buffer, either
  * can be of any Major and Endianess. Return 1 if no overlap is found.
  * Copying from row-major to row-major of the same endian yields the best speed.
@@ -16,4 +15,6 @@
  * For copying involving column major, or different endianess only the
  * second optimization is applied.
  
- 
+ ## Use case
+ * Used as the new "dataman" core function for data copying to replace the old one used
+ * in ornladios/ADIOS2, a library runs on super computers for data I/O

@@ -13,17 +13,17 @@ struct NdCopyFlag {
 };
 
 template <typename T>
-int NdCopy(char* in,
+int NdCopy(const char* in,
            const Dims &inStart,
            const Dims &inCount,
-           bool inIsRowMajor,
-           bool inIsBigEndian,
+           const bool inIsRowMajor,
+           const bool inIsBigEndian,
            char* out,
            const Dims &outStart,
            const Dims &outCount,
-           bool outIsRowMajor,
-           bool outIsBigEndian,
-           bool safeMode=false
+           const bool outIsRowMajor,
+           const bool outIsBigEndian,
+           const bool safeMode=false
            );
 
 template<typename T>

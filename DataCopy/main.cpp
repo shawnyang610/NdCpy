@@ -249,53 +249,124 @@ void RunTestEndianMode(const Dims &input_start, const Dims &input_count, const D
 }
 
 
+
+
+void performance_test_pointer_arithmetic_optimization(int iters){
+    //memory addr. calc. performance test:
+    //both algorithm, only 1 element is copied at a time
+    std::cout<<"pointer arithmetic performance test, copies by element."<<std::endl<<"compares ndcopy algorithm against the old."<<std::endl;
+  
+  std::cout<<"3 dimensional data:"<<std::endl;
+  Dims input_start = {1,1,1};
+  Dims input_count = {5,1,5};
+  Dims output_start = {1,1,1};
+  Dims output_count = {5,5,5};
+  RunTest<int>(input_start, input_count, output_start, output_count, iters);
+  
+  std::cout<<"10 dimensional data:"<<std::endl;
+    input_start = {1,1,1,1,1,1,1,1,1,1};
+    input_count = {5,5,5,5,5,5,5,5,1,5};
+    output_start = {1,1,1,1,1,1,1,1,1,1};
+    output_count = {5,5,5,5,5,5,5,5,5,5};
+    RunTest<int>(input_start, input_count, output_start, output_count, iters);
+}
+
+void performance_test_max_cont_block_optimization(int iters){
+    std::cout<<"max contiguous block optimized perfomance test."<<std::endl;
+    std::cout<<"3 dimensional data:"<<std::endl;
+    Dims input_start = {1,1,1};
+    Dims input_count = {5,1,5};
+    Dims output_start = {1,1,1};
+    Dims output_count = {5,5,5};
+    RunTest<int>(input_start, input_count, output_start, output_count, iters);
+    std::cout<<"10  dimensional data:"<<std::endl;
+    input_start = {1,1,1,1,1,1,1,1,1,1};
+    input_count = {5,1,5,5,5,5,5,5,5,5};
+    output_start = {1,1,1,1,1,1,1,1,1,1};
+    output_count = {5,5,5,5,5,5,5,5,5,5};
+    RunTest<int>(input_start, input_count, output_start, output_count, iters);
+}
+
+void demo_reversed_major_copy(){
+    // input:row major, output:col major, same-endian demo
+    std::cout<<"copy from row major to col major, 2d data:"<<std::endl;
+    Dims input_start = {5,10};
+    Dims input_count = {5,10};
+    Dims output_start = {5,10};
+    Dims output_count = {10,20};
+    RunTestDiffMajorMode<int>(input_start, input_count, output_start, output_count, true, false, false);
+}
+
+void demo_copy_between_any_majors(){
+    std::cout<<"customized copy between any majors, 2d data:"<<std::endl;
+    bool inIsRowMaj=true;
+    Dims input_start = {3,0}; //in its own format
+    Dims input_count = {5,4}; //in its own format
+    bool outIsRowMaj=false;
+    Dims output_start = {3,0}; //in its own format
+    Dims output_count = {10,5}; //in its own format
+    bool safeMode=false;
+    RunTestDiffMajorMode<size_t>(input_start, input_count,
+                                 output_start, output_count,
+                                 inIsRowMaj,outIsRowMaj,safeMode);
+}
+
+void demo_copy_between_reversed_endians(){
+    // endian mode demo
+    // unsigned DEC 4278255360 == BIN 11111111 00000000 11111111 00000000
+    // unsigned DEC 16711935   == BIN 00000000 11111111 00000000 11111111
+    std::cout<<"copy between reversed endians, 2d data:"<<std::endl;
+    std::cout<<"unsigned DEC 4278255360 = BIN 11111111 00000000 11111111 00000000"<<std::endl;
+    std::cout<<"unsigned DEC 16711935 = BIN 00000000 11111111 00000000 11111111"<<std::endl;
+
+    Dims input_start = {2,4};
+    Dims input_count = {3,3};
+    Dims output_start = {0,0};
+    Dims output_count = {10,10};
+    bool inIsRowMaj=true;
+    bool inIsBigEnd=true;
+    bool outIsRowMaj=true;
+    bool outIsBigEnd=false;
+    bool safeMode=false;
+
+    RunTestEndianMode<unsigned>(input_start, input_count, output_start,
+                                output_count, inIsRowMaj,inIsBigEnd,outIsRowMaj,
+                                outIsBigEnd,safeMode);
+}
+
 int main(int argc, const char * argv[]) {
     int iters = 1;
     if(argc > 1){
         iters = atoi(argv[1]);
     }
   
-//    //memory addr. calc. performance test:
-//    //both algorithm, only 1 element is copied at a time
-//        Dims input_start = {1,1,1,1,1,1,1,1,1,1};
-//        Dims input_count = {5,5,5,5,5,5,5,5,1,5};
-//        Dims output_start = {1,1,1,1,1,1,1,1,1,1};
-//        Dims output_count = {5,5,5,5,5,5,5,5,5,5};
-//        RunTest<int>(input_start, input_count, output_start, output_count, iters);
+  std::cout<<std::endl<<"demo 1:"<<std::endl;
+  performance_test_pointer_arithmetic_optimization(iters);
 
-    //largest-continous-block-method performance test
-        Dims input_start = {1,1,1,1,1,1,1,1,1,1};
-        Dims input_count = {5,1,5,5,5,5,5,5,5,5};
-        Dims output_start = {1,1,1,1,1,1,1,1,1,1};
-        Dims output_count = {5,5,5,5,5,5,5,5,5,5};
-        RunTest<int>(input_start, input_count, output_start, output_count, iters);
+  std::cout<<std::endl<<"demo 2:"<<std::endl;
+  performance_test_max_cont_block_optimization(iters);
 
-  //    input:row major, output:col major, same-endian demo
-//    Dims input_start = {5,10};
-//    Dims input_count = {5,10};
-//    Dims output_start = {10,5};
-//    Dims output_count = {20,10};
-//    RunTestDiffMajorMode<int>(input_start, input_count, output_start, output_count);
-////    RunTest<int>(input_start, input_count, output_start, output_count, iters);
-
+  std::cout<<std::endl<<"demo 3:"<<std::endl;
+  // copy from row-maj to col-maj, same endianess demo
+  demo_reversed_major_copy();
   
-//  //DEMO input of any major to output of any major,with same endianess
-//  bool inIsRowMaj=true;
-//  Dims input_start = {3,0}; //in its own format
-//  Dims input_count = {5,4}; //in its own format
-//  bool outIsRowMaj=false;
-//  Dims output_start = {3,0}; //in its own format
-//  Dims output_count = {10,5}; //in its own format
-//  bool safeMode=false;
-//  RunTestDiffMajorMode<size_t>(input_start, input_count,
-//                            output_start, output_count,
-//                            inIsRowMaj,outIsRowMaj,safeMode);
+  std::cout<<std::endl<<"demo 4:"<<std::endl;
+  // DEMO input of any major to output of any major,with same endianess
+  demo_copy_between_any_majors();
+  
+  std::cout<<std::endl<<"demo 5:"<<std::endl;
+  // DEMO copy between reversed endians
+  demo_copy_between_reversed_endians();
+  
+  
+  
   
   //    RunTest<int>(input_start, input_count, output_start, output_count, iters);
     //performance test: diff-maj-same-endian vs same-maj-same-endian:
     //copy 1 element at a time. anticipation: same-maj algm should be slightly faster
     //due to the way mem address is calculated in diff-maj where 2 additional multiplications
     //are used for each element copied, but in both case, avg overhead is still O(1)
+  
 //  Dims input_start = {1,1,1,1,1,1,1,1,1};
 //  Dims input_count = {5,1,5,5,5,5,5,5,5};
 //  Dims output_start = {1,1,1,1,1,1,1,1,1};
@@ -303,24 +374,5 @@ int main(int argc, const char * argv[]) {
 //  //need to comment out data verification part of RunTest before runnning.
 //  RunTest<int>(input_start, input_count,output_start, output_count, iters);
 //
-  //endian mode demo
-  //unsigned DEC 4278255360 == BIN 11111111 00000000 11111111 00000000
-  //unsigned DEC 16711935   == BIN 00000000 11111111 00000000 11111111
-//  Dims input_start = {2,4};
-//  Dims input_count = {3,3};
-//  Dims output_start = {0,0};
-//  Dims output_count = {10,10};
-//  bool inIsRowMaj=true;
-//  bool inIsBigMaj=true;
-//  bool outIsRowMaj=true;
-//  bool outIsBigMaj=true;
-//  bool safeMode=false;
-//
-//  RunTestEndianMode<unsigned>(input_start, input_count, output_start,
-//                            output_count, inIsRowMaj,inIsBigMaj,outIsRowMaj,
-//                              outIsBigMaj,safeMode);
-
-
-  
     return 0;
 }

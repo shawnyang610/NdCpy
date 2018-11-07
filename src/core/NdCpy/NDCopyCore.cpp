@@ -1,13 +1,13 @@
 //
 //  NDCopyCore.cpp
-//  DataCopy
+//  src
 //
 //  Created by Shawn Yang on 7/2/18.
 //  Copyright © 2018 Shawn Yang. All rights reserved.
 //
 #include <algorithm>
 #include <cstring>
-#include "NDCopy.h"
+#include "core/previous/NDCopy2.h"
 #include <functional>
 
 template<class T>

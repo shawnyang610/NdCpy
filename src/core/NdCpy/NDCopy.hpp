@@ -1,14 +1,20 @@
 //
-//  NDCopy.cpp
-//  DataCopy
+//  NDCopy.hpp
+//  src
 //  Created by Shawn Yang on 6/20/18.
 //  shawnyang610@gmail.com
 
+#ifndef NDCOPY_HPP
+#define NDCOPY_HPP
+
 #include <algorithm>
 #include <cstring>
-#include "NDCopy.h"
+//#include "NDCopy.h"
+#include <vector>
 #include <functional>
 
+using Dims = std::vector<size_t>;
+using Buffer = std::vector<char>;
 //***************Start of NdCopy() and its 8 helpers ***************
 // Author:Shawn Yang, shawnyang610@gmail.com
 //
@@ -548,3 +554,5 @@ int NdCopy(const char *in, const Dims &inStart, const Dims &inCount,
   return 0;
 }
 //*************** End of NdCopy() and its 8 helpers ***************
+
+#endif

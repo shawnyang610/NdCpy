@@ -2,9 +2,10 @@
 #include <iostream>
 #include <numeric>
 #include <chrono>
-#include "NDCopy.cpp"
-#include "NDCopy2.tcc"
-#include "NDCopy.h"
+#include "core/NdCpy/NDCopy.hpp"
+#include "core/previous/NDCopy2.tcc"
+#include "core/previous/NDCopy2.h"
+#include "tests/test.h"
 
 
 void PrintDims(const Dims &dims, const std::string &name){

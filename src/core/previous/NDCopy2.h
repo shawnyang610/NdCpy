@@ -1,5 +1,5 @@
-#ifndef NDCOPY_H
-#define NDCOPY_H
+#ifndef NDCOPY2_H
+#define NDCOPY2_H
 
 #include <vector>
 #include <iostream>
@@ -12,19 +12,20 @@ struct NdCopyFlag {
     bool isBigEndian;
 };
 
-template <typename T>
-int NdCopy(const char* in,
-           const Dims &inStart,
-           const Dims &inCount,
-           const bool inIsRowMajor,
-           const bool inIsBigEndian,
-           char* out,
-           const Dims &outStart,
-           const Dims &outCount,
-           const bool outIsRowMajor,
-           const bool outIsBigEndian,
-           const bool safeMode=false
-           );
+//template <typename T>
+//int NdCopy(const char* in,
+//           const Dims &inStart,
+//           const Dims &inCount,
+//           const bool inIsRowMajor,
+//           const bool inIsBigEndian,
+//           char* out,
+//           const Dims &outStart,
+//           const Dims &outCount,
+//           const bool outIsRowMajor,
+//           const bool outIsBigEndian,
+//           const bool safeMode=false
+//           );
+
 
 template<typename T>
 int NdCopy2(

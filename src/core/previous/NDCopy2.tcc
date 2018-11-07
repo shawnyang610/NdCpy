@@ -1,7 +1,7 @@
 #ifndef NDCOPY_TCC
 #define NDCOPY_TCC
 
-#include "NDCopy.h"
+#include "NDCopy2.h"
 
 template <class T>
 using Box = std::pair<T, T>;

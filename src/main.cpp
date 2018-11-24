@@ -79,8 +79,7 @@ void RunTest(const Dims &input_start, const Dims &input_count, const Dims &outpu
                     output_start,
                     output_count,
                        outIsRowMaj,
-                       outIsBigEndian,
-                       safeMode
+                       outIsBigEndian
                     ))
         {
             std::cout<<"no overlap found"<<std::endl;
@@ -189,8 +188,7 @@ void RunTestDiffMajorMode( Dims &input_start, Dims &input_count, Dims &output_st
                  output_start,
                  output_count,
                  outIsRowMaj,
-                 outIsBigEndian,
-                 safeMode
+                 outIsBigEndian
                  ))
     {
         std::cout<<"no overlap found"<<std::endl;
@@ -237,8 +235,7 @@ void RunTestEndianMode(const Dims &input_start, const Dims &input_count, const D
                 output_start,
                 output_count,
                 outIsRowMaj,
-                outIsBigEndian,
-                safeMode
+                outIsBigEndian
                 ))
   {
     std::cout<<"no overlap found"<<std::endl;

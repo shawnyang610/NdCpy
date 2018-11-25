@@ -175,8 +175,14 @@ void RunTestDiffMajorMode( Dims &input_start, Dims &input_count, Dims &output_st
 
 
     MakeData<T>(input_buffer, input_count, false);
-//  if (!inIsRowMaj) std::reverse(input_count.begin(), input_count.end());
-//  if (!outIsRowMaj) std::reverse(output_count.begin(),output_count.end());
+  if (!inIsRowMaj) {
+      std::reverse(input_count.begin(), input_count.end());
+      std::reverse(input_start.begin(), input_start.end());
+  }
+  if (!outIsRowMaj) {
+      std::reverse(output_count.begin(),output_count.end());
+      std::reverse(output_start.begin(), output_start.end());
+  }
   auto start = std::chrono::system_clock::now();
   if(NdCopy<T>(
                  input_buffer.data(),
@@ -196,8 +202,8 @@ void RunTestDiffMajorMode( Dims &input_start, Dims &input_count, Dims &output_st
   auto end = std::chrono::system_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end-start);
   
-//  if (!inIsRowMaj) std::reverse(input_count.begin(), input_count.end());
-//  if (!outIsRowMaj) std::reverse(output_count.begin(),output_count.end());
+  if (!inIsRowMaj) std::reverse(input_count.begin(), input_count.end());
+  if (!outIsRowMaj) std::reverse(output_count.begin(),output_count.end());
     std::cout<<"time spent: "<<duration.count()<<" usec"<<std::endl;
     std::cout << "*************** input_buffer ****************" << std::endl;
     PrintData<T>(input_buffer, input_count);

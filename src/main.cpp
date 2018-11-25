@@ -162,8 +162,8 @@ void RunTestDiffMajorMode( Dims &input_start, Dims &input_count, Dims &output_st
         Dims &output_count, bool inIsRowMaj, bool outIsRowMaj, bool safeMode)
 {
     Buffer input_buffer, output_buffer, output_buffer2;
-  if (!inIsRowMaj) std::reverse(input_count.begin(), input_count.end());
-  if (!outIsRowMaj) std::reverse(output_count.begin(),output_count.end());
+//  if (!inIsRowMaj) std::reverse(input_count.begin(), input_count.end());
+//  if (!outIsRowMaj) std::reverse(output_count.begin(),output_count.end());
 
     input_buffer.resize(std::accumulate(input_count.begin(), input_count.end(), sizeof(T), std::multiplies<size_t>()));
     output_buffer.resize(std::accumulate(output_count.begin(), output_count.end(), sizeof(T), std::multiplies<size_t>()));
@@ -175,8 +175,8 @@ void RunTestDiffMajorMode( Dims &input_start, Dims &input_count, Dims &output_st
 
 
     MakeData<T>(input_buffer, input_count, false);
-  if (!inIsRowMaj) std::reverse(input_count.begin(), input_count.end());
-  if (!outIsRowMaj) std::reverse(output_count.begin(),output_count.end());
+//  if (!inIsRowMaj) std::reverse(input_count.begin(), input_count.end());
+//  if (!outIsRowMaj) std::reverse(output_count.begin(),output_count.end());
   auto start = std::chrono::system_clock::now();
   if(NdCopy<T>(
                  input_buffer.data(),
@@ -196,14 +196,17 @@ void RunTestDiffMajorMode( Dims &input_start, Dims &input_count, Dims &output_st
   auto end = std::chrono::system_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end-start);
   
-  if (!inIsRowMaj) std::reverse(input_count.begin(), input_count.end());
-  if (!outIsRowMaj) std::reverse(output_count.begin(),output_count.end());
+//  if (!inIsRowMaj) std::reverse(input_count.begin(), input_count.end());
+//  if (!outIsRowMaj) std::reverse(output_count.begin(),output_count.end());
     std::cout<<"time spent: "<<duration.count()<<" usec"<<std::endl;
     std::cout << "*************** input_buffer ****************" << std::endl;
     PrintData<T>(input_buffer, input_count);
     std::cout << "*************** output_buffer ****************" << std::endl;
     PrintData<T>(output_buffer, output_count);
 }
+
+
+
 
 
 template<class T>
@@ -295,13 +298,32 @@ void demo_reversed_major_copy(){
     RunTestDiffMajorMode<int>(input_start, input_count, output_start, output_count, true, false, false);
 }
 
+void demo_reversed_major_copy_row2col(){
+    // input:row major, output:col major, same-endian demo
+    std::cout<<"copy from row major to col major, 2d data:"<<std::endl;
+    Dims input_start = {1,2};
+    Dims input_count = {5,5};
+    Dims output_start = {2,1};
+    Dims output_count = {10,10};
+    RunTestDiffMajorMode<int>(input_start, input_count, output_start, output_count, true, false, false);
+}
+
+void demo_reversed_major_copy_col2row() {
+    // input:col major, output:row major, same-endian demo
+    std::cout << "copy from col major to row major, 2d data:" << std::endl;
+    Dims input_start = {1, 2};
+    Dims input_count = {5, 5};
+    Dims output_start = {2, 1};
+    Dims output_count = {10, 10};
+    RunTestDiffMajorMode<int>(input_start, input_count, output_start, output_count, false, true, false);
+}
 void demo_copy_between_any_majors(){
     std::cout<<"customized copy between any majors, 2d data:"<<std::endl;
-    bool inIsRowMaj=true;
+    bool inIsRowMaj=false;
     Dims input_start = {3,0}; //in its own format
     Dims input_count = {5,4}; //in its own format
     bool outIsRowMaj=false;
-    Dims output_start = {3,0}; //in its own format
+    Dims output_start = {3,1}; //in its own format
     Dims output_count = {10,5}; //in its own format
     bool safeMode=false;
     RunTestDiffMajorMode<size_t>(input_start, input_count,
@@ -346,13 +368,18 @@ int main(int argc, const char * argv[]) {
 
   std::cout<<std::endl<<"demo 3:"<<std::endl;
   // copy from row-maj to col-maj, same endianess demo
-  demo_reversed_major_copy();
+//  demo_reversed_major_copy();
+    demo_reversed_major_copy_row2col();
+
+    std::cout<<std::endl<<"demo 4:"<<std::endl;
+    // copy from col-maj to row-maj, same endianess demo
+    demo_reversed_major_copy_col2row();
   
-  std::cout<<std::endl<<"demo 4:"<<std::endl;
+  std::cout<<std::endl<<"demo 5:"<<std::endl;
   // DEMO input of any major to output of any major,with same endianess
   demo_copy_between_any_majors();
   
-  std::cout<<std::endl<<"demo 5:"<<std::endl;
+  std::cout<<std::endl<<"demo 6:"<<std::endl;
   // DEMO copy between reversed endians
   demo_copy_between_reversed_endians();
   
@@ -373,4 +400,4 @@ int main(int argc, const char * argv[]) {
 //  RunTest<int>(input_start, input_count,output_start, output_count, iters);
 //
     return 0;
-}
+};

@@ -1,4 +1,4 @@
-# ndcopy - a fast I/O utility library that copies specified n-dimensional data array from src buffer to dest buffer.
+# ndcopy -  A highly optimized I/O utility library written in C++ that moves n-dimension, non-contiguous data array between contiguous memories, supports any hardware architectures (Big - Little Endian conversion), and Fortran memory scheme (Row - Column Major conversion)
 
 
 ## Features
